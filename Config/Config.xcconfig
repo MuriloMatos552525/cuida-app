@@ -1,0 +1,8 @@
+// Configuração do backend. Deixe vazio para rodar no modo de exemplo (dados fictícios, sem internet).
+// Para usar o Supabase, crie Config/Secrets.xcconfig (fora do git) com:
+//   SUPABASE_URL = https:/$()/SEU-PROJETO.supabase.co
+//   SUPABASE_ANON_KEY = sua-chave-anon
+// (o "/$()/" evita que o // seja lido como comentário)
+SUPABASE_URL =
+SUPABASE_ANON_KEY =
+#include? "Secrets.xcconfig"
