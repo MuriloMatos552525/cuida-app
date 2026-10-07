@@ -1,0 +1,14 @@
+# Xcode
+*.xcodeproj
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+Packages/CuidaKit/Package.resolved
+# Segredos
+Config/Secrets.xcconfig
+# Supabase local
+supabase/.branches
+supabase/.temp
+.env
+.DS_Store
