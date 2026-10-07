@@ -2,6 +2,9 @@ import Core
 import Foundation
 import Supabase
 
+/// O Supabase também exporta um tipo `Session` (a sessão de login dele); aqui usamos sempre o do app.
+typealias Session = Core.Session
+
 /// Repositórios reais, falando com o Supabase. As regras de segurança e o preço final
 /// são decididos no banco (funções em supabase/migrations); aqui só chamamos e decodificamos.
 public enum SupabaseBackend {
