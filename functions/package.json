@@ -1,0 +1,32 @@
+{
+  "name": "cuida-app-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --testPathIgnorePatterns emulator",
+    "serve": "npm run build && firebase emulators:start --only functions,firestore,auth",
+    "deploy": "firebase deploy --only functions,firestore",
+    "test:emulator": "firebase emulators:exec --only firestore --project demo-cuida \"jest test/emulator --runInBand\"",
+    "seed": "npm run build && node scripts/seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0",
+    "geofire-common": "^6.0.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.20.5",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.33.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.14",
+    "typescript": "~6.0.3"
+  }
+}
