@@ -1,60 +1,47 @@
 name: CI
 
-defaults:
-  run:
-    shell: bash
-
 on:
   pull_request:
   push:
     branches: [main]
 
 jobs:
-  database:
-    name: Banco de dados (migrations e testes SQL)
+  app:
+    name: App (tipos, lint e testes)
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgis/postgis:16-3.4
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      PGHOST: localhost
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      PGDATABASE: postgres
     steps:
       - uses: actions/checkout@v4
-      - name: Aplicar migrations e seed
-        run: |
-          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/supabase_shim.sql
-          for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
-          psql -v ON_ERROR_STOP=1 -q -f supabase/seed.sql
-      - name: Testes de preço
-        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/pricing_test.sql
-      - name: Testes do fluxo de reserva e das regras de acesso
-        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/booking_flow_test.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+      - run: npx jest --ci
+      - name: Build web
+        run: npx expo export --platform web
 
-  ios:
-    name: App iOS (build e testes)
-    if: github.event_name == 'pull_request'
-    runs-on: macos-15
+  backend:
+    name: Backend (Cloud Functions e regras do Firestore)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
     steps:
       - uses: actions/checkout@v4
-      - name: Gerar o projeto Xcode
-        run: |
-          brew install xcodegen
-          xcodegen generate
-      - name: Testes do núcleo (preço e estados da reserva)
-        working-directory: Packages/CuidaKit
-        run: |
-          xcodebuild test -scheme CuidaKit-Package \
-            -destination "platform=iOS Simulator,name=$(xcrun simctl list devices available | grep -m1 -o 'iPhone [0-9]*[^(]*' | sed 's/ *$//')" \
-            -skipPackagePluginValidation | xcbeautify
-      - name: Build do app
-        run: |
-          xcodebuild build -project CuidaApp.xcodeproj -scheme CuidaApp \
-            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO | xcbeautify
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run build
+      - name: Testes de preço e estados
+        run: npm test -- --ci
+      - name: Testes no emulador (regras de segurança e regras de negócio)
+        run: npm run test:emulator
