@@ -2,10 +2,7 @@ import { Platform } from 'react-native';
 
 import type { ServiceCategory } from '@shared/models';
 
-// Identidade visual. Todas as telas usam só estes tokens, então trocar o estilo é trocar o
-// tema aqui. EXPO_PUBLIC_THEME escolhe entre as opções enquanto a definitiva não é escolhida.
-
-type ThemeName = 'coral' | 'violeta' | 'azul';
+// Identidade visual (estilo Coral, escolhido em 14/10/2026). Todas as telas usam só estes tokens.
 
 interface Theme {
   colors: {
@@ -50,100 +47,33 @@ const nunito = {
   extrabold: 'Nunito_900Black',
 };
 
-const jakarta = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semibold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extrabold: 'PlusJakartaSans_800ExtraBold',
+// Acolhedor: tons quentes, cantos bem redondos e fonte arredondada.
+const theme: Theme = {
+  colors: {
+    ...common,
+    background: '#FFF8F3',
+    card: '#FFFFFF',
+    surface: '#FBEFE7',
+    border: '#F1E2D7',
+    text: '#2B1A12',
+    textSecondary: '#8A7266',
+    primary: '#F0603C',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#FFE4DA',
+    hero: '#F0603C',
+    onHero: '#FFFFFF',
+    onHeroSecondary: '#FFE0D5',
+    trust: '#13957A',
+    trustSoft: '#DDF4EC',
+  },
+  categories: {
+    baba: { tint: '#FFE4DA', ink: '#E04E2A' },
+    pet: { tint: '#FFF0C7', ink: '#C98A00' },
+    idoso: { tint: '#DDF4EC', ink: '#13957A' },
+  },
+  font: nunito,
+  radius: { sm: 14, md: 20, lg: 28, pill: 999 },
 };
-
-const themes: Record<ThemeName, Theme> = {
-  // Acolhedor: tons quentes, cantos bem redondos e fonte arredondada.
-  coral: {
-    colors: {
-      ...common,
-      background: '#FFF8F3',
-      card: '#FFFFFF',
-      surface: '#FBEFE7',
-      border: '#F1E2D7',
-      text: '#2B1A12',
-      textSecondary: '#8A7266',
-      primary: '#F0603C',
-      onPrimary: '#FFFFFF',
-      primarySoft: '#FFE4DA',
-      hero: '#F0603C',
-      onHero: '#FFFFFF',
-      onHeroSecondary: '#FFE0D5',
-      trust: '#13957A',
-      trustSoft: '#DDF4EC',
-    },
-    categories: {
-      baba: { tint: '#FFE4DA', ink: '#E04E2A' },
-      pet: { tint: '#FFF0C7', ink: '#C98A00' },
-      idoso: { tint: '#DDF4EC', ink: '#13957A' },
-    },
-    font: nunito,
-    radius: { sm: 14, md: 20, lg: 28, pill: 999 },
-  },
-  // Vibrante: roxo forte, amarelo de destaque e fonte geométrica.
-  violeta: {
-    colors: {
-      ...common,
-      background: '#F5F3FF',
-      card: '#FFFFFF',
-      surface: '#EEEAFE',
-      border: '#E3DCFB',
-      text: '#1A1033',
-      textSecondary: '#6E6690',
-      primary: '#6D3BEF',
-      onPrimary: '#FFFFFF',
-      primarySoft: '#EAE2FF',
-      hero: '#5B2BE0',
-      onHero: '#FFFFFF',
-      onHeroSecondary: '#D9CCFF',
-      trust: '#0E9F75',
-      trustSoft: '#DBF5EC',
-    },
-    categories: {
-      baba: { tint: '#FFE1F0', ink: '#E2387F' },
-      pet: { tint: '#FFF1C9', ink: '#D48B00' },
-      idoso: { tint: '#DBF5EC', ink: '#0E9F75' },
-    },
-    font: jakarta,
-    radius: { sm: 14, md: 18, lg: 24, pill: 999 },
-  },
-  // Confiança: azul de saúde, branco limpo e verde para segurança.
-  azul: {
-    colors: {
-      ...common,
-      background: '#F4F7FB',
-      card: '#FFFFFF',
-      surface: '#EAF0F7',
-      border: '#DDE5EF',
-      text: '#0D1B2A',
-      textSecondary: '#5D6B7C',
-      primary: '#1463E0',
-      onPrimary: '#FFFFFF',
-      primarySoft: '#E1ECFD',
-      hero: '#0F4FB8',
-      onHero: '#FFFFFF',
-      onHeroSecondary: '#C9DBFA',
-      trust: '#0B9A6A',
-      trustSoft: '#DCF4EA',
-    },
-    categories: {
-      baba: { tint: '#E1ECFD', ink: '#1463E0' },
-      pet: { tint: '#FFF0D2', ink: '#D98600' },
-      idoso: { tint: '#DCF4EA', ink: '#0B9A6A' },
-    },
-    font: jakarta,
-    radius: { sm: 12, md: 16, lg: 22, pill: 999 },
-  },
-};
-
-const selected = (process.env.EXPO_PUBLIC_THEME as ThemeName | undefined) ?? 'coral';
-const theme = themes[selected] ?? themes.coral;
 
 export const colors = theme.colors;
 export const font = theme.font;
