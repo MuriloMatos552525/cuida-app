@@ -4,7 +4,7 @@ App que conecta famílias a babás, pet sitters e cuidadores de idosos verificad
 Feito em **Expo** (React Native, roda em iPhone, Android e navegador) com **Firebase** no backend.
 "Cuida" é um nome provisório.
 
-## Rodar o app (modo demonstração)
+## Rodar o app
 
 Precisa do Node 22.
 
@@ -14,31 +14,37 @@ npx expo start
 ```
 
 Abra no iPhone com o app **Expo Go** (leia o QR code) ou aperte `w` para abrir no navegador.
-Sem configurar o Firebase, o app abre no **modo demonstração**: tela de login com os botões
-"Sou cliente" e "Sou cuidadora", cuidadores de exemplo perto da Av. Paulista e uma simulação do
-cuidador aceitando, indo e concluindo a reserva. Dá para testar o fluxo inteiro sozinho.
+O app já aponta para o projeto Firebase **cuida-cdd3d** (`src/lib/firebase-config.ts`).
 
-## Ligar ao Firebase
+Para testar sem servidor, crie `.env.local` com `EXPO_PUBLIC_DEMO=true`. O app abre no **modo
+demonstração**, com os botões "Sou cliente" e "Sou cuidadora", cuidadores de exemplo perto da Av.
+Paulista e uma simulação do cuidador aceitando, indo e concluindo a reserva.
 
-1. Crie um projeto no [Console do Firebase](https://console.firebase.google.com) no plano Blaze
-   (as Cloud Functions exigem). Ative **Authentication > E-mail/senha** e crie o **Firestore** na
-   região `southamerica-east1`.
-2. Em Configurações do projeto, adicione um app Web e copie a configuração para `.env.local`
-   (modelo em `.env.example`).
-3. Publique backend e regras:
+## Publicar o backend no Firebase
 
-   ```bash
-   cd functions
-   npm install
-   npx firebase login
-   npx firebase use --add          # escolha o projeto
-   npm run deploy                  # Cloud Functions, regras e índices do Firestore
-   GCLOUD_PROJECT=seu-projeto node scripts/seed.js --reference   # tarifas, feriados, especialidades
-   ```
+Uma vez, no [Console do Firebase](https://console.firebase.google.com/project/cuida-cdd3d):
 
-   O seed usa as credenciais do `gcloud auth application-default login`.
+1. Mude para o plano **Blaze** (as Cloud Functions exigem; o uso inicial cabe na cota grátis).
+2. Confira se **Authentication > Método de login > E-mail/senha** está ativado.
 
-4. Rode o app de novo (`npx expo start`). Ele passa a usar o Firebase.
+Depois, no computador:
+
+```bash
+cd functions
+npm install
+npx firebase login
+npm run deploy                  # Cloud Functions, regras e índices do Firestore
+```
+
+Por fim, grave tarifas, feriados e especialidades. O seed usa as credenciais do
+`gcloud auth application-default login`:
+
+```bash
+GCLOUD_PROJECT=cuida-cdd3d node scripts/seed.js --reference
+```
+
+O deploy também publica `firestore.rules` e substitui as regras do "modo de teste", que deixam
+qualquer pessoa ler e gravar o banco.
 
 Para desenvolver sem tocar no projeto real: `cd functions && npm run serve` sobe os emuladores,
 `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run seed` popula com dados de exemplo, e
