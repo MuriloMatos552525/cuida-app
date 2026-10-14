@@ -27,24 +27,30 @@ Uma vez, no [Console do Firebase](https://console.firebase.google.com/project/cu
 1. Mude para o plano **Blaze** (as Cloud Functions exigem; o uso inicial cabe na cota grátis).
 2. Confira se **Authentication > Método de login > E-mail/senha** está ativado.
 
-Depois, no computador:
+Depois, no computador, dentro da pasta `functions` (o deploy publica as Cloud Functions, as regras
+e os índices do Firestore):
 
 ```bash
 cd functions
 npm install
 npx firebase login
-npm run deploy                  # Cloud Functions, regras e índices do Firestore
-```
-
-Por fim, grave tarifas, feriados e especialidades. O seed usa as credenciais do
-`gcloud auth application-default login`:
-
-```bash
-GCLOUD_PROJECT=cuida-cdd3d node scripts/seed.js --reference
+npm run deploy
 ```
 
 O deploy também publica `firestore.rules` e substitui as regras do "modo de teste", que deixam
 qualquer pessoa ler e gravar o banco.
+
+Gravar tarifas e feriados no banco é opcional: sem eles, o servidor usa as tarifas de exemplo de
+`seedData.ts` para São Paulo e os feriados nacionais. Para gravar (usa as credenciais do
+`gcloud auth application-default login`):
+
+```bash
+GCLOUD_PROJECT=cuida-cdd3d npm run seed -- --reference
+```
+
+O app (`npx expo start`) roda sempre na **pasta raiz** do projeto, nunca dentro de `functions`.
+Um cuidador real só aparece na busca depois que a equipe marca `approvedByStaff` no documento dele
+em `caregivers`, no Console do Firestore.
 
 Para desenvolver sem tocar no projeto real: `cd functions && npm run serve` sobe os emuladores,
 `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run seed` popula com dados de exemplo, e

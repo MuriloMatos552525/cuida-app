@@ -102,6 +102,17 @@ describe('reserva', () => {
     expect(after.map((r) => r.caregiver.id)).toEqual(['demo-julia']);
   });
 
+  test('sem tarifas gravadas, usa as de exemplo da cidade', async () => {
+    await db.recursiveDelete(db.collection('pricingRules'));
+    await db.recursiveDelete(db.collection('holidays'));
+    await verifiedClient();
+    const booking = await logic.createBooking(
+      db, 'cli', bookingInput({ start: '2027-04-21T14:00:00-03:00', end: '2027-04-21T18:00:00-03:00' }),
+    );
+    expect(booking.price.timeAmount).toBe(14_000);
+    expect(booking.price.surchargeReason).toBe('feriado');
+  });
+
   test('feriado vem da tabela de feriados', async () => {
     await verifiedClient();
     const booking = await logic.createBooking(
