@@ -1,0 +1,120 @@
+rules_version = '2';
+
+// Regras de acesso do Cuida.
+// Tudo que envolve dinheiro, verificação, reserva ou avaliação é gravado só pelas Cloud Functions
+// (que usam o Admin SDK e não passam por estas regras). O app grava apenas o próprio perfil.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isMe(uid) { return signedIn() && request.auth.uid == uid; }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // Perfil privado (nome completo, telefone, contatos de emergência).
+    match /users/{uid} {
+      allow read: if isMe(uid);
+      allow create: if isMe(uid)
+        && request.resource.data.keys().hasOnly(['fullName', 'role', 'phone', 'emergencyContacts', 'createdAt'])
+        && request.resource.data.role in ['cliente', 'cuidador']
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() > 1;
+      // Papel, suspensão e notas não mudam pelo app.
+      allow update: if isMe(uid) && onlyChanges(['fullName', 'phone', 'emergencyContacts']);
+
+      match /addresses/{addressId} {
+        allow read, delete: if isMe(uid);
+        allow create, update: if isMe(uid)
+          && request.resource.data.keys().hasOnly(['label', 'street', 'city', 'coordinate'])
+          && request.resource.data.coordinate.latitude is number
+          && request.resource.data.coordinate.longitude is number;
+      }
+    }
+
+    // Verificações: o próprio usuário só consegue mandar um item para análise.
+    // Aprovação, reprovação e validade vêm da equipe ou do provedor de checagem.
+    match /verifications/{uid} {
+      function sentToReview(kind) {
+        return !(kind in request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys())
+          || (request.resource.data[kind].keys().hasOnly(['status', 'updatedAt'])
+              && request.resource.data[kind].status == 'em_analise'
+              && (resource == null || !(kind in resource.data) || resource.data[kind].status in ['pendente', 'reprovado', 'expirado']));
+      }
+      allow read: if isMe(uid);
+      allow create, update: if isMe(uid)
+        && request.resource.data.keys().hasOnly(['cpf', 'documento', 'selfie', 'antecedentes'])
+        && sentToReview('cpf') && sentToReview('documento') && sentToReview('selfie') && sentToReview('antecedentes');
+    }
+
+    // Perfil público do cuidador. Campos de confiança (verificado, elegível, nota, especialidades
+    // aprovadas, localização) são do servidor.
+    match /caregivers/{uid} {
+      allow read: if signedIn();
+      allow create: if isMe(uid)
+        && get(/databases/$(database)/documents/users/$(uid)).data.role == 'cuidador'
+        && request.resource.data.keys().hasOnly(['name', 'photoURL', 'bio', 'categories', 'serviceRadiusKm', 'available'])
+        && request.resource.data.serviceRadiusKm is number
+        && request.resource.data.serviceRadiusKm <= 30;
+      allow update: if isMe(uid)
+        && onlyChanges(['name', 'photoURL', 'bio', 'categories', 'serviceRadiusKm', 'available'])
+        && request.resource.data.serviceRadiusKm is number
+        && request.resource.data.serviceRadiusKm <= 30;
+    }
+
+    // Localização exata do cuidador: só o servidor.
+    match /caregiversPrivate/{uid} {
+      allow read, write: if false;
+    }
+
+    match /bookings/{bookingId} {
+      function booking() { return get(/databases/$(database)/documents/bookings/$(bookingId)).data; }
+      allow read: if signedIn() && request.auth.uid in [resource.data.clientId, resource.data.caregiverId];
+      allow write: if false;
+
+      // PIN de início: só o cliente vê e passa para o cuidador pessoalmente.
+      match /private/pin {
+        allow read: if signedIn() && request.auth.uid == booking().clientId;
+      }
+      // Endereço exato: o cliente sempre; o cuidador só depois de aceitar e até terminar.
+      match /private/address {
+        allow read: if signedIn() && (
+          request.auth.uid == booking().clientId
+          || (request.auth.uid == booking().caregiverId && booking().status in ['aceita', 'a_caminho', 'em_andamento'])
+        );
+      }
+      match /private/{doc} {
+        allow write: if false;
+      }
+    }
+
+    match /payments/{bookingId} {
+      allow read: if signedIn() && request.auth.uid in [
+        get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId,
+        get(/databases/$(database)/documents/bookings/$(bookingId)).data.caregiverId
+      ];
+      allow write: if false;
+    }
+
+    // Avaliações às cegas: aparecem quando as duas partes avaliaram (ou após 7 dias).
+    match /reviews/{reviewId} {
+      allow read: if signedIn() && (resource.data.visible == true || resource.data.reviewerId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Tabelas mantidas pela equipe.
+    match /pricingRules/{id} {
+      allow read: if signedIn();
+    }
+    match /holidays/{id} {
+      allow read: if signedIn();
+    }
+    match /specialties/{id} {
+      allow read: if signedIn();
+    }
+
+    match /emergencies/{id} {
+      allow read, write: if false;
+    }
+  }
+}
