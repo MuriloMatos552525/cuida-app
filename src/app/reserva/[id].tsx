@@ -26,7 +26,7 @@ import { api } from '@/lib/api';
 import { dependentsLabel, formatRange, statusLabel } from '@/lib/format';
 import { currentCoordinate } from '@/lib/location';
 import { useProfile } from '@/lib/session';
-import { categoryInfo, colors, radius, space } from '@/lib/theme';
+import { categoryInfo, colors, font, radius, space } from '@/lib/theme';
 
 const steps = ['solicitada', 'aceita', 'a_caminho', 'em_andamento', 'concluida'] as const;
 const stepLabel = { solicitada: 'Pedido', aceita: 'Aceito', a_caminho: 'A caminho', em_andamento: 'Iniciado', concluida: 'Concluído' };
@@ -105,7 +105,7 @@ export default function BookingScreen() {
         <Row gap={4}>
           {steps.map((s, i) => (
             <View key={s} style={{ flex: 1, gap: 4 }}>
-              <View style={{ height: 4, borderRadius: 2, backgroundColor: i <= stepIndex ? colors.text : colors.border }} />
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: i <= stepIndex ? colors.primary : colors.border }} />
               <Text variant="caption" style={{ fontSize: 11 }}>
                 {stepLabel[s]}
               </Text>
@@ -119,7 +119,7 @@ export default function BookingScreen() {
           <Text variant="label" color={colors.trust}>
             Código de início
           </Text>
-          <Text style={{ fontSize: 44, fontWeight: '700', letterSpacing: 10, color: colors.trust }}>{pin}</Text>
+          <Text style={{ fontSize: 44, fontFamily: font.extrabold, letterSpacing: 10, color: colors.trust }}>{pin}</Text>
           <Text variant="caption" style={{ textAlign: 'center' }}>
             Passe este código ao cuidador só quando ele chegar e você conferir que é a mesma pessoa da foto.
           </Text>
@@ -158,7 +158,7 @@ export default function BookingScreen() {
                 placeholder="0000"
                 placeholderTextColor={colors.textSecondary}
                 style={{
-                  backgroundColor: colors.surface, borderRadius: radius.sm, padding: space.md,
+                  backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: space.md, fontFamily: font.bold,
                   fontSize: 28, letterSpacing: 8, textAlign: 'center', color: colors.text,
                 }}
               />

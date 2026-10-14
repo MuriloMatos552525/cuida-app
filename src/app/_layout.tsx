@@ -1,24 +1,39 @@
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black } from '@expo-google-fonts/nunito';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { SessionProvider, useSession } from '@/lib/session';
-import { colors } from '@/lib/theme';
+import { colors, font } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, primary: colors.text } };
+const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, primary: colors.primary } };
 
 function Routes() {
   const profile = useSession();
+  const [fontsLoaded, fontError] = useFonts({
+    Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black,
+    PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  const ready = profile !== undefined && (fontsLoaded || !!fontError);
   useEffect(() => {
-    if (profile !== undefined) SplashScreen.hideAsync();
-  }, [profile]);
-  if (profile === undefined) return null;
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+  if (!ready) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false, headerBackTitle: 'Voltar', headerShadowVisible: false, headerTintColor: colors.text }}>
+    <Stack screenOptions={{ headerShown: false, headerBackTitle: 'Voltar', headerShadowVisible: false, headerTintColor: colors.text, headerTitleStyle: { fontFamily: font.bold }, headerStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="index" />
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="entrar" />

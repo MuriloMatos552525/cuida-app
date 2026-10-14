@@ -13,12 +13,12 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { PriceBreakdown } from '@shared/models';
 
 import { brl, surchargeLabel } from '@/lib/format';
-import { colors, radius, space } from '@/lib/theme';
+import { colors, font, radius, shadow, space } from '@/lib/theme';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -28,21 +28,34 @@ export function Screen({
   children,
   scroll = true,
   footer,
+  hero,
   edges = ['top'],
 }: {
   children: ReactNode;
   scroll?: boolean;
   footer?: ReactNode;
+  /** Faixa colorida no topo; ocupa também a área da barra de status. */
+  hero?: ReactNode;
   edges?: ('top' | 'bottom')[];
 }) {
+  const insets = useSafeAreaInsets();
+  const top = hero ? (
+    <View style={[styles.hero, { paddingTop: insets.top + space.lg }]}>
+      <View style={styles.heroInner}>{hero}</View>
+    </View>
+  ) : null;
   return (
-    <SafeAreaView style={styles.screen} edges={edges}>
+    <SafeAreaView style={styles.screen} edges={hero ? edges.filter((e) => e !== 'top') : edges}>
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {children}
+        <ScrollView keyboardShouldPersistTaps="handled">
+          {top}
+          <View style={styles.content}>{children}</View>
         </ScrollView>
       ) : (
-        <View style={[styles.content, { flex: 1 }]}>{children}</View>
+        <>
+          {top}
+          <View style={[styles.content, { flex: 1 }]}>{children}</View>
+        </>
       )}
       {footer ? <View style={styles.footer}>{footer}</View> : null}
     </SafeAreaView>
@@ -90,9 +103,9 @@ export function Button({
 }) {
   const palette = {
     primary: { bg: colors.primary, fg: colors.onPrimary },
-    secondary: { bg: colors.surface, fg: colors.text },
+    secondary: { bg: colors.primarySoft, fg: colors.primary },
     danger: { bg: colors.danger, fg: '#FFFFFF' },
-    ghost: { bg: 'transparent', fg: colors.text },
+    ghost: { bg: 'transparent', fg: colors.primary },
   }[variant];
   const inactive = disabled || loading;
   return (
@@ -188,7 +201,7 @@ export function Stepper({ value, onChange, min = 1, max = 10, label }: { value: 
 export function RoundIcon({ icon, onPress, disabled }: { icon: IconName; onPress: () => void; disabled?: boolean }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} style={[styles.roundIcon, disabled && { opacity: 0.3 }]} accessibilityRole="button">
-      <Ionicons name={icon} size={20} color={colors.text} />
+      <Ionicons name={icon} size={20} color={colors.primary} />
     </Pressable>
   );
 }
@@ -272,7 +285,7 @@ export function Avatar({ name, size = 56 }: { name: string; size?: number }) {
     .toUpperCase();
   return (
     <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <RNText style={{ fontSize: size * 0.36, fontWeight: '600', color: colors.text }}>{initials}</RNText>
+      <RNText style={{ fontSize: size * 0.36, fontFamily: font.bold, color: colors.primary }}>{initials}</RNText>
     </View>
   );
 }
@@ -336,12 +349,12 @@ export function PriceDetails({ price, viewer }: { price: PriceBreakdown; viewer:
 }
 
 const textStyles = StyleSheet.create({
-  display: { fontSize: 32, fontWeight: '700', color: colors.text, letterSpacing: -0.5 },
-  title: { fontSize: 24, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
-  heading: { fontSize: 18, fontWeight: '600', color: colors.text },
-  body: { fontSize: 16, color: colors.text, lineHeight: 22 },
-  caption: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text },
+  display: { fontSize: 30, fontFamily: font.extrabold, color: colors.text, letterSpacing: -0.6, lineHeight: 36 },
+  title: { fontSize: 22, fontFamily: font.bold, color: colors.text, letterSpacing: -0.3 },
+  heading: { fontSize: 18, fontFamily: font.bold, color: colors.text },
+  body: { fontSize: 16, fontFamily: font.regular, color: colors.text, lineHeight: 22 },
+  caption: { fontSize: 13, fontFamily: font.regular, color: colors.textSecondary, lineHeight: 18 },
+  label: { fontSize: 14, fontFamily: font.semibold, color: colors.text },
 });
 
 const styles = StyleSheet.create({
@@ -352,6 +365,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+    backgroundColor: colors.background,
     width: '100%',
     maxWidth: 640,
     alignSelf: 'center',
@@ -359,15 +373,15 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 54,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     paddingHorizontal: space.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
   },
-  buttonText: { fontSize: 17, fontWeight: '600' },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.md, gap: space.sm },
+  buttonText: { fontSize: 17, fontFamily: font.bold },
+  card: { backgroundColor: colors.card, borderRadius: radius.md, padding: space.md, gap: space.sm, ...shadow },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -377,19 +391,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
   },
-  chipText: { fontSize: 15, fontWeight: '500', color: colors.text },
+  chipText: { fontSize: 15, fontFamily: font.medium, color: colors.text },
   roundIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    fontFamily: font.regular,
     borderRadius: radius.sm,
     paddingHorizontal: space.md,
     paddingVertical: 14,
@@ -406,7 +423,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignSelf: 'flex-start',
   },
-  trustText: { fontSize: 12, fontWeight: '600', color: colors.trust },
+  trustText: { fontSize: 12, fontFamily: font.semibold, color: colors.trust },
   notice: { padding: space.md, borderRadius: radius.sm, alignItems: 'flex-start' },
-  avatar: { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  hero: {
+    backgroundColor: colors.hero,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.xl,
+  },
+  heroInner: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: space.sm },
+  avatar: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
 });

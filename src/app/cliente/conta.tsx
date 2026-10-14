@@ -14,15 +14,25 @@ export default function ClientAccount() {
   const { data: addresses } = useFocusData(() => api.listAddresses());
 
   return (
-    <Screen>
-      <Row gap={space.md}>
-        <Avatar name={profile.fullName} size={64} />
-        <View style={{ gap: 2 }}>
-          <Text variant="title">{profile.fullName}</Text>
-          <Text variant="caption">{profile.email}</Text>
-          {profile.ratingAvg ? <Rating value={profile.ratingAvg} /> : null}
-        </View>
-      </Row>
+    <Screen
+      hero={
+        <Row gap={space.md}>
+          <Avatar name={profile.fullName} size={64} />
+          <View style={{ gap: 2, flex: 1 }}>
+            <Text variant="title" color={colors.onHero}>
+              {profile.fullName}
+            </Text>
+            <Text variant="caption" color={colors.onHeroSecondary}>
+              {profile.email}
+            </Text>
+          </View>
+          {profile.ratingAvg ? (
+            <View style={{ backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <Rating value={profile.ratingAvg} />
+            </View>
+          ) : null}
+        </Row>
+      }>
 
       <Section title="Verificação de identidade">
         <Text variant="caption">Necessária para reservar. Seus dados ficam protegidos conforme a LGPD.</Text>
