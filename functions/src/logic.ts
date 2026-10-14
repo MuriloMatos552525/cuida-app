@@ -441,3 +441,10 @@ export async function dailyMaintenance(db: Firestore): Promise<{ expired: number
   for (const doc of hidden.docs) await doc.ref.update({ visible: true });
   return { expired, revealed: hidden.size };
 }
+
+/** Recalcula a elegibilidade de todos os cuidadores (substitui os gatilhos quando não há Cloud Functions). */
+export async function refreshAllCaregivers(db: Firestore): Promise<number> {
+  const caregivers = await db.collection('caregivers').select().get();
+  for (const doc of caregivers.docs) await refreshCaregiverEligibility(db, doc.id);
+  return caregivers.size;
+}

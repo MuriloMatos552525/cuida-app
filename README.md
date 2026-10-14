@@ -20,15 +20,63 @@ Para testar sem servidor, crie `.env.local` com `EXPO_PUBLIC_DEMO=true`. O app a
 demonstração**, com os botões "Sou cliente" e "Sou cuidadora", cuidadores de exemplo perto da Av.
 Paulista e uma simulação do cuidador aceitando, indo e concluindo a reserva.
 
-## Publicar o backend no Firebase
+## Publicar o backend
 
-Uma vez, no [Console do Firebase](https://console.firebase.google.com/project/cuida-cdd3d):
+A lógica do servidor (reserva, preço, PIN, avaliação, verificação) fica em `functions/src` e pode rodar
+de dois jeitos. Comece pelo plano grátis; quando for lançar, mude para o Blaze.
 
-1. Mude para o plano **Blaze** (as Cloud Functions exigem; o uso inicial cabe na cota grátis).
-2. Confira se **Authentication > Método de login > E-mail/senha** está ativado.
+Nos dois casos, confira no [Console do Firebase](https://console.firebase.google.com/project/cuida-cdd3d)
+se **Authentication > Método de login > E-mail/senha** está ativado.
 
-Depois, no computador, dentro da pasta `functions` (o deploy publica as Cloud Functions, as regras
-e os índices do Firestore):
+### Plano grátis (Spark + Vercel)
+
+O plano grátis do Firebase não roda Cloud Functions, então a mesma lógica roda como API na
+[Vercel](https://vercel.com), que também é grátis. O banco e o login continuam no Firebase.
+
+1. Publique as regras e os índices do Firestore (funciona no plano grátis e tira o banco do "modo de
+   teste", que deixa qualquer pessoa ler e gravar):
+
+   ```bash
+   cd functions
+   npm install
+   npx firebase login
+   npm run deploy:regras
+   ```
+
+2. No Console do Firebase, abra **Configurações do projeto > Contas de serviço** e clique em **Gerar
+   nova chave privada**. Baixa um arquivo `.json`. Ele dá acesso total ao banco: não envie para o
+   GitHub nem mande para ninguém.
+
+3. Na Vercel, entre com sua conta do GitHub e clique em **Add New > Project**. Escolha o repositório
+   `cuida-app` e preencha:
+   - **Root Directory:** `functions`
+   - **Framework Preset:** `Other`
+   - **Environment Variables:**
+     - `FIREBASE_SERVICE_ACCOUNT`: o conteúdo inteiro do arquivo `.json` do passo 2.
+     - `CRON_SECRET`: uma senha longa qualquer, inventada por você.
+
+   Clique em **Deploy**. No fim aparece o endereço da API, algo como `https://cuida-app-xxxx.vercel.app`.
+
+4. Na pasta raiz do projeto, crie o arquivo `.env.local` com esse endereço e reinicie o `npx expo start`:
+
+   ```bash
+   EXPO_PUBLIC_API_URL=https://cuida-app-xxxx.vercel.app
+   ```
+
+Sem as Cloud Functions, não há gatilhos no banco. Uma rotina da Vercel roda todo dia às 3h e
+recalcula quem aparece na busca (além de vencer certidões e liberar avaliações). Para aplicar na
+hora uma aprovação feita no Console, rode, trocando a senha e o endereço:
+
+```bash
+curl -H "Authorization: Bearer SUA_SENHA" https://cuida-app-xxxx.vercel.app/api/manutencao
+```
+
+O plano grátis da Vercel (Hobby) é para uso não comercial e serve para testar. Para lançar, use o
+Blaze abaixo (no começo o uso cabe na cota grátis) ou o plano pago da Vercel.
+
+### Plano Blaze (Cloud Functions)
+
+Mude o projeto para o plano **Blaze** no Console. Depois, dentro da pasta `functions`:
 
 ```bash
 cd functions
@@ -37,8 +85,9 @@ npx firebase login
 npm run deploy
 ```
 
-O deploy também publica `firestore.rules` e substitui as regras do "modo de teste", que deixam
-qualquer pessoa ler e gravar o banco.
+Isso publica as Cloud Functions, as regras e os índices. Neste caso, deixe `EXPO_PUBLIC_API_URL` vazio.
+
+### Tarifas e feriados
 
 Gravar tarifas e feriados no banco é opcional: sem eles, o servidor usa as tarifas de exemplo de
 `seedData.ts` para São Paulo e os feriados nacionais. Para gravar (usa as credenciais do

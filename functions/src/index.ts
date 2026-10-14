@@ -5,6 +5,7 @@ import { onDocumentWritten } from 'firebase-functions/firestore';
 import { CallableRequest, HttpsError, onCall } from 'firebase-functions/https';
 import { onSchedule } from 'firebase-functions/scheduler';
 
+import { CallName, calls } from './calls';
 import * as logic from './logic';
 import { TIME_ZONE } from './shared/pricing';
 
@@ -15,12 +16,12 @@ setGlobalOptions({ region: 'southamerica-east1', maxInstances: 10 });
 const db = getFirestore();
 
 /** Exige login e converte AppError em HttpsError, que o app recebe com código e mensagem. */
-function callable<In, Out>(handler: (uid: string, data: In) => Promise<Out>) {
-  return onCall(async (request: CallableRequest<In>) => {
+function callable(name: CallName) {
+  return onCall(async (request: CallableRequest<never>) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Entre na sua conta.');
     try {
-      return await handler(uid, request.data);
+      return await calls[name](db, uid, request.data);
     } catch (e) {
       if (e instanceof logic.AppError) throw new HttpsError(e.code, e.message);
       throw e;
@@ -28,20 +29,12 @@ function callable<In, Out>(handler: (uid: string, data: In) => Promise<Out>) {
   });
 }
 
-export const setCaregiverLocation = callable((uid, data: { coordinate: unknown; city: unknown }) =>
-  logic.setCaregiverLocation(db, uid, data),
-);
-export const searchCaregivers = callable((_uid, data: logic.SearchInput) => logic.searchCaregivers(db, data));
-export const createBooking = callable((uid, data: logic.CreateBookingInput) => logic.createBooking(db, uid, data));
-export const bookingTransition = callable((uid, data: Parameters<typeof logic.bookingTransition>[2]) =>
-  logic.bookingTransition(db, uid, data),
-);
-export const submitReview = callable((uid, data: Parameters<typeof logic.submitReview>[2]) =>
-  logic.submitReview(db, uid, data),
-);
-export const triggerEmergency = callable((uid, data: Parameters<typeof logic.triggerEmergency>[2]) =>
-  logic.triggerEmergency(db, uid, data),
-);
+export const setCaregiverLocation = callable('setCaregiverLocation');
+export const searchCaregivers = callable('searchCaregivers');
+export const createBooking = callable('createBooking');
+export const bookingTransition = callable('bookingTransition');
+export const submitReview = callable('submitReview');
+export const triggerEmergency = callable('triggerEmergency');
 
 // Mudou a verificação (feita pela equipe ou pelo provedor) ou o perfil do cuidador: recalcula a elegibilidade.
 export const onVerificationWritten = onDocumentWritten('verifications/{uid}', (event) =>

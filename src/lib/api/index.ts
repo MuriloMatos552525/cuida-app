@@ -9,4 +9,4 @@ export * from './types';
 export const api: Api =
   process.env.EXPO_PUBLIC_DEMO === 'true'
     ? new DemoApi({ simulate: true })
-    : new FirebaseApi(firebaseConfig, process.env.EXPO_PUBLIC_USE_EMULATORS === 'true');
+    : new FirebaseApi(firebaseConfig, process.env.EXPO_PUBLIC_USE_EMULATORS === 'true', process.env.EXPO_PUBLIC_API_URL || undefined);

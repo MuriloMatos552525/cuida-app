@@ -24,7 +24,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { connectFunctionsEmulator, FunctionsError, getFunctions, httpsCallable } from 'firebase/functions';
+import { connectFunctionsEmulator, FunctionsError, getFunctions, httpsCallable, httpsCallableFromURL } from 'firebase/functions';
 
 import type { Address, Booking, CaregiverResult, CaregiverSummary, Review, UserRole, Verifications } from '@shared/models';
 
@@ -32,7 +32,8 @@ import { createAuth } from './auth';
 import { Api, ApiError, CaregiverProfile, NewBooking, Profile, SearchParams } from './types';
 
 // Implementação com Firebase. Leituras vão direto ao Firestore (protegidas pelas regras);
-// tudo que grava reserva, preço, avaliação ou verificação passa pelas Cloud Functions.
+// tudo que grava reserva, preço, avaliação ou verificação passa pelas Cloud Functions ou, no plano
+// grátis do Firebase, pela API HTTP em `apiUrl` (functions/src/http.ts), que fala o mesmo protocolo.
 
 const firebaseErrors: Record<string, string> = {
   'auth/invalid-credential': 'E-mail ou senha incorretos.',
@@ -47,7 +48,8 @@ async function friendly<T>(work: Promise<T>): Promise<T> {
   try {
     return await work;
   } catch (e) {
-    if (e instanceof FunctionsError) throw new ApiError(e.message);
+    // O SDK acrescenta o status HTTP no fim da mensagem ("... [400]").
+    if (e instanceof FunctionsError) throw new ApiError(e.message.replace(/ \[\d+\]$/, ''));
     const code = (e as { code?: string }).code;
     if (code && firebaseErrors[code]) throw new ApiError(firebaseErrors[code]);
     if (code === 'permission-denied') throw new ApiError('Você não tem acesso a isso.');
@@ -66,7 +68,7 @@ export class FirebaseApi implements Api {
   private profile: Profile | null = null;
   private listeners = new Set<(p: Profile | null) => void>();
 
-  constructor(config: FirebaseOptions, useEmulators = false) {
+  constructor(config: FirebaseOptions, useEmulators = false, private apiUrl?: string) {
     this.app = initializeApp(config);
     this.auth = createAuth(this.app);
     this.db = getFirestore(this.app);
@@ -279,7 +281,10 @@ export class FirebaseApi implements Api {
   }
 
   private async call<T>(name: string, data: unknown): Promise<T> {
-    const result = await friendly(httpsCallable<unknown, T>(this.functions, name)(data));
+    const fn = this.apiUrl
+      ? httpsCallableFromURL<unknown, T>(this.functions, `${this.apiUrl.replace(/\/$/, '')}/api/${name}`)
+      : httpsCallable<unknown, T>(this.functions, name);
+    const result = await friendly(fn(data));
     return result.data;
   }
 }

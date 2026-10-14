@@ -11,6 +11,7 @@
     "test": "jest --testPathIgnorePatterns emulator",
     "serve": "npm run build && firebase emulators:start --only functions,firestore,auth",
     "deploy": "firebase deploy --only functions,firestore",
+    "deploy:regras": "firebase deploy --only firestore",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-cuida \"jest test/emulator --runInBand\"",
     "seed": "npm run build && node scripts/seed.js"
   },
