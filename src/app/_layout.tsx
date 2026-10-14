@@ -43,6 +43,10 @@ function Routes() {
       <Stack.Protected guard={!!profile}>
         <Stack.Screen name="reserva/[id]" options={{ headerShown: true, title: 'Reserva' }} />
       </Stack.Protected>
+      <Stack.Protected guard={!!profile?.staff}>
+        <Stack.Screen name="equipe/index" options={{ headerShown: true, title: 'Análise de documentos' }} />
+        <Stack.Screen name="equipe/[uid]" options={{ headerShown: true, title: '' }} />
+      </Stack.Protected>
     </Stack>
   );
 }

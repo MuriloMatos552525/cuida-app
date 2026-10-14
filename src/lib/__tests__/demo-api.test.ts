@@ -78,7 +78,7 @@ test('cliente novo precisa verificar a identidade antes de reservar', async () =
     mode: 'hora' as const, dependents: 1, tripsKm: 0, requiresSpecialty: false, notes: '',
   };
   await expect(api.createBooking(input)).rejects.toThrow('Verifique sua identidade');
-  for (const kind of ['cpf', 'documento', 'selfie'] as const) await api.sendVerification(kind);
+  for (const kind of ['cpf', 'documento', 'selfie'] as const) await api.sendVerification(kind, { cpf: '529.982.247-25', image: '/9j/' });
   await new Promise((r) => setTimeout(r, 20));
   await expect(api.createBooking(input)).resolves.toMatchObject({ status: 'solicitada' });
 });

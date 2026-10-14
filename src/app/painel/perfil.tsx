@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
@@ -118,6 +119,10 @@ export default function CaregiverProfileTab() {
       />
       {message ? <Notice tone={message.tone} text={message.text} /> : null}
       <Button title="Salvar perfil" onPress={save} loading={saving === 'perfil'} />
+      {profile.staff ? (
+        <Button title="Análise de documentos (equipe)" icon="shield-checkmark-outline" variant="secondary" onPress={() => router.push('/equipe')} />
+      ) : null}
+
       <Button title="Sair" variant="secondary" onPress={() => api.signOut()} />
     </Screen>
   );

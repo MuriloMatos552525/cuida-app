@@ -5,6 +5,8 @@ import type {
   CaregiverResult,
   CaregiverSummary,
   Coordinate,
+  ReviewDetails,
+  ReviewQueueEntry,
   Review,
   ServiceCategory,
   UserRole,
@@ -23,6 +25,8 @@ export interface Profile {
   role: UserRole;
   verifications: Verifications;
   ratingAvg: number | null;
+  /** Faz parte da equipe que analisa documentos (documento staff/{uid} no Firestore). */
+  staff: boolean;
 }
 
 export interface CaregiverProfile extends CaregiverSummary {
@@ -84,12 +88,19 @@ export interface Api {
   myReview(bookingId: string): Promise<Review | null>;
   triggerEmergency(bookingId: string | null, coordinate: Coordinate | null): Promise<void>;
 
-  sendVerification(kind: VerificationKind): Promise<void>;
+  /** CPF para o item "cpf"; foto JPEG em base64 para os demais. */
+  sendVerification(kind: VerificationKind, input: { cpf?: string; image?: string }): Promise<void>;
   myCaregiverProfile(): Promise<CaregiverProfile | null>;
   updateCaregiverProfile(
     changes: Partial<Pick<CaregiverProfile, 'bio' | 'categories' | 'serviceRadiusKm' | 'available'>>,
   ): Promise<void>;
   setCaregiverLocation(coordinate: Coordinate, city: string): Promise<void>;
+
+  // Equipe
+  staffQueue(): Promise<ReviewQueueEntry[]>;
+  staffDetails(uid: string): Promise<ReviewDetails>;
+  staffReview(input: { uid: string; kind: VerificationKind; approve: boolean; reason?: string; validUntil?: string }): Promise<void>;
+  staffApproveCaregiver(uid: string, approved: boolean): Promise<void>;
 }
 
 export class ApiError extends Error {}

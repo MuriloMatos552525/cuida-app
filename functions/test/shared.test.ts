@@ -1,6 +1,7 @@
 import { brl, quote, PricingError } from '../src/shared/pricing';
 import { availableEvents, isCaregiverEligible, nextStatus, TransitionError } from '../src/shared/rules';
 import { SAMPLE_PRICING_RULES } from '../src/shared/seedData';
+import { formatCpf, isValidCpf } from '../src/shared/cpf';
 
 const baba = SAMPLE_PRICING_RULES.find((r) => r.category === 'baba')!;
 const idoso = SAMPLE_PRICING_RULES.find((r) => r.category === 'idoso')!;
@@ -116,4 +117,15 @@ describe('elegibilidade do cuidador', () => {
   test('suspenso', () => expect(isCaregiverEligible(full, { ...opts, suspended: true })).toBe(false));
   test('selfie em análise', () =>
     expect(isCaregiverEligible({ ...full, selfie: { status: 'em_analise' } }, opts)).toBe(false));
+});
+
+describe('CPF', () => {
+  test('confere os dígitos verificadores e formata', () => {
+    expect(isValidCpf('529.982.247-25')).toBe(true);
+    expect(isValidCpf('52998224726')).toBe(false);
+    expect(isValidCpf('111.111.111-11')).toBe(false);
+    expect(isValidCpf('5299822')).toBe(false);
+    expect(formatCpf('52998224725')).toBe('529.982.247-25');
+    expect(formatCpf('5299')).toBe('529.9');
+  });
 });
