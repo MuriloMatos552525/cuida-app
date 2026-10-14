@@ -16,6 +16,7 @@ import type {
 import { ACTIVE_STATUSES } from './shared/models';
 import { localParts, PricingError, quote } from './shared/pricing';
 import { BookingEvent, isCaregiverEligible, isIdentityVerified, nextStatus, TransitionError } from './shared/rules';
+import { NATIONAL_HOLIDAYS, SAMPLE_PRICING_RULES } from './shared/seedData';
 
 // Regras de negócio que precisam do banco. Recebem o Firestore como parâmetro para que os
 // testes rodem contra o emulador; index.ts só faz a ponte com as Cloud Functions.
@@ -57,10 +58,13 @@ async function getRole(db: Firestore, uid: string): Promise<{ role: string; full
   return { role: data.role, fullName: data.fullName, suspended: !!data.suspended };
 }
 
+/** Tarifa da coleção pricingRules; sem ela, usa a tarifa de exemplo da cidade (seedData). */
 async function pricingRule(db: Firestore, category: ServiceCategory, city: string): Promise<PricingRule> {
   const snap = await db.doc(`pricingRules/${category}__${city}`).get();
-  if (!snap.exists) throw new AppError('failed-precondition', 'Ainda não atendemos essa cidade.');
-  return snap.data() as PricingRule;
+  if (snap.exists) return snap.data() as PricingRule;
+  const sample = SAMPLE_PRICING_RULES.find((r) => r.category === category && r.city === city);
+  if (!sample) throw new AppError('failed-precondition', 'Ainda não atendemos essa cidade.');
+  return sample;
 }
 
 async function isHoliday(db: Firestore, start: Date, city: string): Promise<boolean> {
@@ -69,7 +73,7 @@ async function isHoliday(db: Firestore, start: Date, city: string): Promise<bool
     db.doc(`holidays/${day}__*`).get(),
     db.doc(`holidays/${day}__${city}`).get(),
   ]);
-  return national.exists || local.exists;
+  return national.exists || local.exists || !!NATIONAL_HOLIDAYS[day];
 }
 
 function parseDate(value: unknown, field: string): Date {
