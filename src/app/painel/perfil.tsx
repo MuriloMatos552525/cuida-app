@@ -8,7 +8,7 @@ import { VerificationList } from '@/components/verification-list';
 import { api, CaregiverProfile } from '@/lib/api';
 import { currentCoordinate, DEMO_COORDINATE } from '@/lib/location';
 import { useProfile } from '@/lib/session';
-import { categoryInfo, space } from '@/lib/theme';
+import { categoryInfo, colors, space } from '@/lib/theme';
 
 export default function CaregiverProfileTab() {
   const profile = useProfile();
@@ -58,15 +58,23 @@ export default function CaregiverProfileTab() {
   }
 
   return (
-    <Screen>
-      <Row gap={space.md}>
-        <Avatar name={profile.fullName} size={64} />
-        <View style={{ gap: 4 }}>
-          <Text variant="title">{profile.fullName}</Text>
-          <Rating value={caregiver.rating} count={caregiver.reviewCount} />
-          {caregiver.eligible ? <TrustBadge label="Perfil verificado" /> : null}
-        </View>
-      </Row>
+    <Screen
+      hero={
+        <Row gap={space.md}>
+          <Avatar name={profile.fullName} size={64} />
+          <View style={{ gap: 6, flex: 1 }}>
+            <Text variant="title" color={colors.onHero}>
+              {profile.fullName}
+            </Text>
+            <Row gap={6}>
+              <View style={{ backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Rating value={caregiver.rating} count={caregiver.reviewCount} />
+              </View>
+              {caregiver.eligible ? <TrustBadge label="Verificado" /> : null}
+            </Row>
+          </View>
+        </Row>
+      }>
 
       <Section title="Verificação">
         <Text variant="caption">

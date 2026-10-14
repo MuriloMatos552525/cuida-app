@@ -18,7 +18,7 @@ export function BookingCard({ booking, viewer }: { booking: Booking; viewer: 'cl
     <Card onPress={() => router.push(`/reserva/${booking.id}`)}>
       <Row gap={12}>
         <View style={{ width: 44, height: 44, borderRadius: radius.sm, backgroundColor: info.tint, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={info.icon} size={22} color={colors.text} />
+          <Ionicons name={info.icon} size={22} color={info.ink} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="label">

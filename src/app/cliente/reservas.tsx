@@ -5,7 +5,7 @@ import { ACTIVE_STATUSES } from '@shared/models';
 import { BookingCard } from '@/components/booking-card';
 import { Loading, Screen, Section, Text } from '@/components/ui';
 import { api } from '@/lib/api';
-import { space } from '@/lib/theme';
+import { colors, space } from '@/lib/theme';
 import { useFocusData } from '@/lib/useAsync';
 
 export default function ClientBookings() {
@@ -15,8 +15,12 @@ export default function ClientBookings() {
   const past = bookings?.filter((b) => !ACTIVE_STATUSES.includes(b.status)) ?? [];
 
   return (
-    <Screen>
-      <Text variant="display">Reservas</Text>
+    <Screen
+      hero={
+        <Text variant="display" color={colors.onHero}>
+          Reservas
+        </Text>
+      }>
       {error ? <Text>{error}</Text> : null}
       {bookings?.length === 0 ? <Text>Você ainda não fez nenhuma reserva.</Text> : null}
       {upcoming.length ? (

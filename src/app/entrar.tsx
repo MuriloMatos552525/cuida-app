@@ -34,18 +34,23 @@ export default function SignIn() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: space.sm, marginTop: space.xl }}>
-        <Row gap={10}>
-          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="heart" size={24} color={colors.background} />
-          </View>
-          <Text variant="display">Cuida</Text>
-        </Row>
-        <Text variant="title">Cuidado de confiança, na hora que você precisa.</Text>
-        <Text color={colors.textSecondary}>Babás, pet sitters e cuidadores de idosos verificados perto de você.</Text>
-      </View>
-
+    <Screen
+      hero={
+        <View style={{ gap: space.md, paddingVertical: space.md }}>
+          <Row gap={10}>
+            <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: colors.onHero, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="heart" size={26} color={colors.hero} />
+            </View>
+            <Text variant="display" color={colors.onHero}>
+              Cuida
+            </Text>
+          </Row>
+          <Text variant="title" color={colors.onHero}>
+            Cuidado de confiança, na hora que você precisa.
+          </Text>
+          <Text color={colors.onHeroSecondary}>Babás, pet sitters e cuidadores de idosos verificados perto de você.</Text>
+        </View>
+      }>
       <Row>
         <Chip label="Entrar" selected={mode === 'entrar'} onPress={() => setMode('entrar')} />
         <Chip label="Criar conta" selected={mode === 'criar'} onPress={() => setMode('criar')} />

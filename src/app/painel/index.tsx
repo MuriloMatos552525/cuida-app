@@ -30,11 +30,15 @@ export default function CaregiverHome() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: 4 }}>
-        <Text color={colors.textSecondary}>Olá, {firstName(profile.fullName)}</Text>
-        <Text variant="display">Seus pedidos</Text>
-      </View>
+    <Screen
+      hero={
+        <>
+          <Text color={colors.onHeroSecondary}>Olá, {firstName(profile.fullName)} 👋</Text>
+          <Text variant="display" color={colors.onHero}>
+            Seus pedidos
+          </Text>
+        </>
+      }>
 
       {caregiver && !caregiver.eligible ? (
         <Card onPress={() => router.push('/painel/perfil')}>
@@ -48,7 +52,7 @@ export default function CaregiverHome() {
             <Text variant="heading">{caregiver?.available ? 'Disponível' : 'Indisponível'}</Text>
             <Text variant="caption">{caregiver?.available ? 'Você aparece nas buscas.' : 'Você não aparece nas buscas.'}</Text>
           </View>
-          <Switch value={!!caregiver?.available} onValueChange={toggle} disabled={saving} trackColor={{ true: colors.trust }} />
+          <Switch value={!!caregiver?.available} onValueChange={toggle} disabled={saving} trackColor={{ true: colors.primary }} />
         </Row>
       </Card>
 
