@@ -54,18 +54,53 @@ const firebaseErrors: Record<string, string> = {
   'auth/network-request-failed': 'Sem conexão. Tente de novo.',
 };
 
+// Mensagens para os códigos que o SDK devolve sem explicação ("internal", "not-found"...).
+function callError(code: string, apiUrl?: string) {
+  const where = apiUrl ? `a API (${apiUrl})` : 'as Cloud Functions';
+  switch (code) {
+    case 'functions/not-found':
+      return apiUrl
+        ? `A API em ${apiUrl} não tem esta função. Confira se o endereço é o de produção da Vercel e se ela publicou a última versão.`
+        : 'O servidor não está publicado. No plano grátis, coloque EXPO_PUBLIC_API_URL no arquivo .env.local e reinicie o Expo.';
+    case 'functions/unauthenticated':
+      return 'O servidor não aceitou seu login. Saia e entre de novo. Se continuar, desligue a proteção de deploy da Vercel.';
+    case 'functions/deadline-exceeded':
+      return `O servidor demorou demais para responder (${where}). Tente de novo.`;
+    default:
+      return `Não conseguimos falar com ${where}. Confira a internet e o endereço da API.`;
+  }
+}
+
 /** Converte erros do Firebase em mensagens para a pessoa. */
-async function friendly<T>(work: Promise<T>): Promise<T> {
+async function friendly<T>(work: Promise<T>, apiUrl?: string): Promise<T> {
   try {
     return await work;
   } catch (e) {
-    // O SDK acrescenta o status HTTP no fim da mensagem ("... [400]").
-    if (e instanceof FunctionsError) throw new ApiError(e.message.replace(/ \[\d+\]$/, ''));
+    // Aparece no terminal do `npx expo start`, para saber o que houve de verdade.
+    console.warn('[Cuida]', e);
+    if (e instanceof FunctionsError) {
+      // O SDK acrescenta o status HTTP no fim da mensagem ("... [400]").
+      const message = e.message.replace(/ \[\d+\]$/, '');
+      // Sem mensagem própria do servidor, o SDK repete só o código ("internal", "not-found").
+      const generic = message === e.code.replace('functions/', '') || message.startsWith('Backend error status');
+      throw new ApiError(generic ? callError(e.code, apiUrl) : message);
+    }
     const code = (e as { code?: string }).code;
     if (code && firebaseErrors[code]) throw new ApiError(firebaseErrors[code]);
     if (code === 'permission-denied') throw new ApiError('Você não tem acesso a isso.');
+    if (code === 'unavailable') throw new ApiError('Sem conexão com o banco de dados. Confira a internet e tente de novo.');
     throw e;
   }
+}
+
+/** Gravações no Firestore só terminam quando o servidor confirma; sem rede, não esperam para sempre. */
+function withTimeout<T>(work: Promise<T>, ms = 20000): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new ApiError('O banco de dados não respondeu. Confira a internet e tente de novo.')), ms),
+    ),
+  ]);
 }
 
 export class FirebaseApi implements Api {
@@ -81,7 +116,14 @@ export class FirebaseApi implements Api {
 
   constructor(config: FirebaseOptions, useEmulators = false, private apiUrl?: string) {
     // A API da Vercel "dorme" sem uso e demora alguns segundos no primeiro pedido; acorda já.
-    if (apiUrl) fetch(`${apiUrl.replace(/\/$/, '')}/api/ping`).catch(() => {});
+    if (apiUrl) {
+      fetch(`${apiUrl.replace(/\/$/, '')}/api/ping`)
+        .then((r) => {
+          if (!r.ok) console.warn(`[Cuida] A API em ${apiUrl} respondeu ${r.status} ao teste. Confira o endereço.`);
+        })
+        .catch((e) => console.warn(`[Cuida] Não conseguimos acessar a API em ${apiUrl}:`, e));
+    }
+    if (__DEV__) console.log(`[Cuida] Servidor: ${apiUrl ? `API ${apiUrl}` : 'Cloud Functions (EXPO_PUBLIC_API_URL vazio)'}`);
     this.app = initializeApp(config);
     this.auth = createAuth(this.app);
     this.db = getFirestore(this.app);
@@ -113,15 +155,15 @@ export class FirebaseApi implements Api {
 
   async signUp(input: { fullName: string; email: string; password: string; role: UserRole }) {
     const { user } = await friendly(createUserWithEmailAndPassword(this.auth, input.email.trim(), input.password));
-    await setDoc(doc(this.db, 'users', user.uid), {
+    await friendly(withTimeout(setDoc(doc(this.db, 'users', user.uid), {
       fullName: input.fullName.trim(),
       role: input.role,
       createdAt: new Date().toISOString(),
-    });
+    })));
     if (input.role === 'cuidador') {
-      await setDoc(doc(this.db, 'caregivers', user.uid), {
+      await friendly(withTimeout(setDoc(doc(this.db, 'caregivers', user.uid), {
         name: input.fullName.trim(), photoURL: null, bio: '', categories: [], serviceRadiusKm: 10, available: false,
-      });
+      })));
     }
     await this.reloadProfile();
   }
@@ -138,7 +180,8 @@ export class FirebaseApi implements Api {
       const [profile, verifications, staff] = await Promise.all([
         getDoc(doc(this.db, 'users', user.uid)),
         getDoc(doc(this.db, 'verifications', user.uid)),
-        getDoc(doc(this.db, 'staff', user.uid)),
+        // Com regras antigas publicadas, ler `staff` é negado; trata como "não é da equipe".
+        getDoc(doc(this.db, 'staff', user.uid)).catch(() => null),
       ]);
       // Logo após criar a conta o perfil ainda pode não existir; signUp chama de novo.
       if (!profile.exists()) return;
@@ -150,7 +193,7 @@ export class FirebaseApi implements Api {
         role: data.role,
         ratingAvg: data.ratingAvg ?? null,
         verifications: (verifications.data() ?? {}) as Verifications,
-        staff: staff.exists(),
+        staff: !!staff?.exists(),
       };
     }
     for (const l of this.listeners) l(this.profile);
@@ -164,7 +207,7 @@ export class FirebaseApi implements Api {
   }
 
   async addAddress(input: Omit<Address, 'id'>) {
-    const ref = await addDoc(collection(this.db, 'users', this.uid(), 'addresses'), input);
+    const ref = await friendly(withTimeout(addDoc(collection(this.db, 'users', this.uid(), 'addresses'), input)));
     return { ...input, id: ref.id };
   }
 
@@ -275,7 +318,7 @@ export class FirebaseApi implements Api {
   }
 
   async updateCaregiverProfile(changes: Partial<Pick<CaregiverProfile, 'bio' | 'categories' | 'serviceRadiusKm' | 'available'>>) {
-    await friendly(updateDoc(doc(this.db, 'caregivers', this.uid()), changes));
+    await friendly(withTimeout(updateDoc(doc(this.db, 'caregivers', this.uid()), changes)));
   }
 
   async setCaregiverLocation(coordinate: { latitude: number; longitude: number }, city: string) {
@@ -309,9 +352,9 @@ export class FirebaseApi implements Api {
 
   private async call<T>(name: string, data: unknown): Promise<T> {
     const fn = this.apiUrl
-      ? httpsCallableFromURL<unknown, T>(this.functions, `${this.apiUrl.replace(/\/$/, '')}/api/${name}`)
-      : httpsCallable<unknown, T>(this.functions, name);
-    const result = await friendly(fn(data));
+      ? httpsCallableFromURL<unknown, T>(this.functions, `${this.apiUrl.replace(/\/$/, '')}/api/${name}`, { timeout: 30000 })
+      : httpsCallable<unknown, T>(this.functions, name, { timeout: 30000 });
+    const result = await friendly(fn(data), this.apiUrl);
     return result.data;
   }
 }

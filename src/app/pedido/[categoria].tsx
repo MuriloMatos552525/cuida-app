@@ -44,8 +44,13 @@ export default function NewRequest() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Depois de tocar em buscar, mostra o que falta (some sozinho quando a pessoa escolhe).
+  const [tried, setTried] = useState(false);
+  const missing = !address ? 'Escolha o endereço do atendimento.' : startHour === undefined ? 'Não há mais horários neste dia. Escolha outro dia.' : null;
+  const notice = (tried && missing) || error;
 
   async function search() {
+    setTried(true);
     if (!address || startHour === undefined) return;
     const start = saoPaulo(day, startHour);
     const end = new Date(start.getTime() + duration * (mode === 'hora' ? 3_600_000 : DAY_MS));
@@ -73,13 +78,10 @@ export default function NewRequest() {
     <Screen
       edges={[]}
       footer={
-        <Button
-          title="Buscar cuidadores"
-          icon="search"
-          onPress={search}
-          loading={loading}
-          disabled={!address || startHour === undefined}
-        />
+        <View style={{ gap: space.sm }}>
+          {notice ? <Notice tone="danger" text={notice} /> : null}
+          <Button title="Buscar cuidadores" icon="search" onPress={search} loading={loading} />
+        </View>
       }>
       <Stack.Screen options={{ title: info.title }} />
 
@@ -160,8 +162,6 @@ export default function NewRequest() {
         placeholder="Rotina, alergias, medicamentos, horário de dormir…"
         style={{ minHeight: 80, textAlignVertical: 'top' }}
       />
-
-      {error ? <Notice tone="danger" text={error} /> : null}
     </Screen>
   );
 }
