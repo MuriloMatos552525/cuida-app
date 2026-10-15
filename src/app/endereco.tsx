@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import { TextInput, View } from 'react-native';
 
 import type { Coordinate } from '@shared/models';
 
 import { Button, Field, Notice, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { currentCoordinate, DEMO_COORDINATE } from '@/lib/location';
+import { space } from '@/lib/theme';
 
 export default function NewAddress() {
   const [label, setLabel] = useState('');
@@ -29,10 +30,18 @@ export default function NewAddress() {
   }
 
   async function save() {
-    if (!coordinate) return;
+    setError(null);
+    if (!street.trim() || !city.trim()) {
+      setError('Preencha a rua e a cidade.');
+      return;
+    }
     setSaving(true);
     try {
-      await api.addAddress({ label: label.trim() || 'Endereço', street: street.trim(), city: city.trim(), coordinate });
+      // Sem a localização marcada, pega agora.
+      const c = coordinate ?? (await currentCoordinate()) ?? (api.demo ? DEMO_COORDINATE : null);
+      if (!c) throw new Error('Não conseguimos sua localização. Permita o acesso nas configurações.');
+      setCoordinate(c);
+      await api.addAddress({ label: label.trim() || 'Endereço', street: street.trim(), city: city.trim(), coordinate: c });
       router.back();
     } catch (e) {
       setError((e as Error).message);
@@ -43,7 +52,12 @@ export default function NewAddress() {
   return (
     <Screen
       edges={['bottom']}
-      footer={<Button title="Salvar endereço" onPress={save} loading={saving} disabled={!coordinate || !street.trim() || !city.trim()} />}>
+      footer={
+        <View style={{ gap: space.sm }}>
+          {error ? <Notice tone="danger" text={error} /> : null}
+          <Button title="Salvar endereço" onPress={save} loading={saving} />
+        </View>
+      }>
       <Field label="Nome" placeholder="Casa, Trabalho, Casa da vó…" value={label} onChangeText={setLabel} next={streetRef} />
       <Field ref={streetRef} next={cityRef} label="Rua, número e complemento" value={street} onChangeText={setStreet} autoComplete="street-address" />
       <Field ref={cityRef} label="Cidade" value={city} onChangeText={setCity} />
@@ -58,7 +72,6 @@ export default function NewAddress() {
         Use a localização estando no endereço do atendimento. O endereço exato só é mostrado ao cuidador depois que ele aceita a
         reserva.
       </Text>
-      {error ? <Notice tone="danger" text={error} /> : null}
     </Screen>
   );
 }

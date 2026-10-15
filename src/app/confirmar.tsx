@@ -38,7 +38,14 @@ export default function Confirm() {
   }
 
   return (
-    <Screen edges={[]} footer={<Button title="Confirmar reserva" onPress={confirm} loading={loading} />}>
+    <Screen
+      edges={[]}
+      footer={
+        <View style={{ gap: space.sm }}>
+          {error ? <Notice tone="danger" text={error} /> : null}
+          <Button title="Confirmar reserva" onPress={confirm} loading={loading} />
+        </View>
+      }>
       <Card>
         <Row gap={space.md}>
           <Avatar name={chosen.caregiver.name} size={48} />
@@ -61,7 +68,6 @@ export default function Confirm() {
         tone="trust"
         text="Quando o cuidador chegar, passe a ele o código de 4 dígitos que vai aparecer na reserva. Sem o código o serviço não começa."
       />
-      {error ? <Notice tone="danger" text={error} /> : null}
     </Screen>
   );
 }

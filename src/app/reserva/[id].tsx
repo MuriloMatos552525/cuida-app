@@ -76,8 +76,12 @@ export default function BookingScreen() {
   const other = viewer === 'cliente' ? booking.caregiver.name : booking.clientName;
 
   async function run(event: BookingEvent) {
-    setBusy(event);
     setError(null);
+    if (event === 'start' && typedPin.length !== 4) {
+      setError('Digite o código de 4 dígitos que aparece no app do cliente.');
+      return;
+    }
+    setBusy(event);
     try {
       await api.transition(id, event, event === 'start' ? typedPin : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -171,7 +175,6 @@ export default function BookingScreen() {
               variant={eventButton[event].variant}
               onPress={() => run(event)}
               loading={busy === event}
-              disabled={event === 'start' && typedPin.length !== 4}
             />
           ))}
           {error ? <Notice tone="danger" text={error} /> : null}
@@ -236,8 +239,12 @@ function ReviewBox({ bookingId, name }: { bookingId: string; name: string }) {
   }
 
   async function send() {
-    setSending(true);
     setError(null);
+    if (!rating) {
+      setError('Toque nas estrelas para dar sua nota.');
+      return;
+    }
+    setSending(true);
     try {
       await api.submitReview(bookingId, { rating, tags, comment });
       setMine(await api.myReview(bookingId));
@@ -263,7 +270,7 @@ function ReviewBox({ bookingId, name }: { bookingId: string; name: string }) {
         </Row>
         <Field label="Comentário (opcional)" value={comment} onChangeText={setComment} multiline />
         <Text variant="caption">A avaliação é às cegas: ninguém vê a nota do outro antes de dar a sua.</Text>
-        <Button title="Enviar avaliação" onPress={send} loading={sending} disabled={!rating} />
+        <Button title="Enviar avaliação" onPress={send} loading={sending} />
         {error ? <Notice tone="danger" text={error} /> : null}
       </Card>
     </Section>

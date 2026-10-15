@@ -66,6 +66,13 @@ O plano grátis do Firebase não roda Cloud Functions, então a mesma lógica ro
    EXPO_PUBLIC_API_URL=https://cuida-app-xxxx.vercel.app
    ```
 
+Para conferir, abra `https://cuida-app-xxxx.vercel.app/api/ping` no navegador: deve aparecer
+`{"result":"ok"}`. Ao abrir o app, o terminal do `npx expo start` mostra `[Cuida] Servidor: API ...`;
+se mostrar `Cloud Functions`, o `.env.local` não foi lido (confira o nome do arquivo, que fica na
+pasta raiz, e reinicie o Expo). Use o endereço de **produção** da Vercel (o de **Domains**, sem
+`-git-` nem letras aleatórias no meio): os endereços de preview pedem login da Vercel e o app recebe
+"não aceitou seu login".
+
 Sem as Cloud Functions, não há gatilhos no banco. Uma rotina da Vercel roda todo dia às 3h e
 recalcula quem aparece na busca (além de vencer certidões e liberar avaliações). Para aplicar na
 hora uma aprovação feita no Console, rode, trocando a senha e o endereço:
