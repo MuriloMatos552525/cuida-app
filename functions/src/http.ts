@@ -52,6 +52,9 @@ export async function handle(req: HttpRequest, deps: Deps): Promise<HttpResponse
     return { status: 200, body: { result: { ...result, caregivers } } };
   }
 
+  // O app chama ao abrir, para a função já estar acordada quando a pessoa buscar ou reservar.
+  if (req.name === 'ping') return { status: 200, body: { result: 'ok' } };
+
   if (req.method !== 'POST') return failure('invalid-argument', 'Use POST.');
   const call = Object.hasOwn(calls, req.name) ? calls[req.name as keyof typeof calls] : undefined;
   if (!call) return failure('not-found', 'Operação desconhecida.');

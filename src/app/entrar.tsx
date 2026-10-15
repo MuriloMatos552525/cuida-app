@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useRef, useState } from 'react';
+import { TextInput, View } from 'react-native';
 
 import type { UserRole } from '@shared/models';
 
@@ -16,6 +16,8 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   async function submit(override?: { email: string; password: string }) {
     setLoading(true);
@@ -63,12 +65,22 @@ export default function SignIn() {
             <Chip label="Quero contratar" icon="search" selected={role === 'cliente'} onPress={() => setRole('cliente')} />
             <Chip label="Quero trabalhar" icon="briefcase-outline" selected={role === 'cuidador'} onPress={() => setRole('cuidador')} />
           </Row>
-          <Field label="Nome completo" value={fullName} onChangeText={setFullName} autoComplete="name" textContentType="name" />
+          <Field
+            label="Nome completo"
+            value={fullName}
+            onChangeText={setFullName}
+            autoComplete="name"
+            textContentType="name"
+            autoCapitalize="words"
+            next={emailRef}
+          />
         </View>
       ) : null}
 
       <View style={{ gap: space.md }}>
         <Field
+          ref={emailRef}
+          next={passwordRef}
           label="E-mail"
           value={email}
           onChangeText={setEmail}
@@ -78,6 +90,7 @@ export default function SignIn() {
           textContentType="emailAddress"
         />
         <Field
+          ref={passwordRef}
           label="Senha"
           value={password}
           onChangeText={setPassword}

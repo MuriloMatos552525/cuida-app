@@ -9,7 +9,7 @@ import { colors, space } from '@/lib/theme';
 import { useFocusData } from '@/lib/useAsync';
 
 export default function ClientBookings() {
-  const { data: bookings, error } = useFocusData(() => api.listBookings());
+  const { data: bookings, error } = useFocusData(() => api.listBookings(), undefined, 'bookings');
   if (!bookings && !error) return <Loading />;
   const upcoming = bookings?.filter((b) => ACTIVE_STATUSES.includes(b.status)) ?? [];
   const past = bookings?.filter((b) => !ACTIVE_STATUSES.includes(b.status)) ?? [];

@@ -80,6 +80,8 @@ export class FirebaseApi implements Api {
   private listeners = new Set<(p: Profile | null) => void>();
 
   constructor(config: FirebaseOptions, useEmulators = false, private apiUrl?: string) {
+    // A API da Vercel "dorme" sem uso e demora alguns segundos no primeiro pedido; acorda já.
+    if (apiUrl) fetch(`${apiUrl.replace(/\/$/, '')}/api/ping`).catch(() => {});
     this.app = initializeApp(config);
     this.auth = createAuth(this.app);
     this.db = getFirestore(this.app);

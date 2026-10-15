@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { api, Profile } from './api';
+import { clearFocusCache } from './useAsync';
 
 // Quem está usando o app. `undefined` enquanto carrega, `null` sem login.
 
@@ -8,7 +9,14 @@ const SessionContext = createContext<Profile | null | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
-  useEffect(() => api.onProfileChange(setProfile), []);
+  useEffect(
+    () =>
+      api.onProfileChange((p) => {
+        if (!p) clearFocusCache();
+        setProfile(p);
+      }),
+    [],
+  );
   return <SessionContext.Provider value={profile}>{children}</SessionContext.Provider>;
 }
 

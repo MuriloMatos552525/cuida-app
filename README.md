@@ -14,6 +14,9 @@ npx expo start
 ```
 
 Abra no iPhone com o app **Expo Go** (leia o QR code) ou aperte `w` para abrir no navegador.
+
+O `npx expo start` roda em modo de desenvolvimento, que é bem mais lento que o app publicado. Para
+sentir a velocidade real, use `npx expo start --no-dev --minify`.
 O app já aponta para o projeto Firebase **cuida-cdd3d** (`src/lib/firebase-config.ts`).
 
 Para testar sem servidor, crie `.env.local` com `EXPO_PUBLIC_DEMO=true`. O app abre no **modo

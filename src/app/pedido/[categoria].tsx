@@ -23,7 +23,7 @@ export default function NewRequest() {
   const category: ServiceCategory = categoria in categoryInfo ? categoria : 'baba';
   const info = categoryInfo[category];
 
-  const { data: addresses } = useFocusData(() => api.listAddresses());
+  const { data: addresses } = useFocusData(() => api.listAddresses(), undefined, 'addresses');
   const [addressId, setAddressId] = useState<string | null>(null);
   const address: Address | undefined = addresses?.find((a) => a.id === addressId) ?? addresses?.[0];
 

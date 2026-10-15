@@ -12,7 +12,7 @@ import { useFocusData } from '@/lib/useAsync';
 
 export default function CaregiverHome() {
   const profile = useProfile();
-  const { data, reload } = useFocusData(() => Promise.all([api.myCaregiverProfile(), api.listBookings()]), profile);
+  const { data, reload } = useFocusData(() => Promise.all([api.myCaregiverProfile(), api.listBookings()]), profile, 'painel');
   const [saving, setSaving] = useState(false);
   if (!data) return <Loading />;
   const [caregiver, bookings] = data;

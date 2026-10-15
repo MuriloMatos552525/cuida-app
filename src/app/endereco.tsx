@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { TextInput } from 'react-native';
 
 import type { Coordinate } from '@shared/models';
 
@@ -15,6 +16,8 @@ export default function NewAddress() {
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const streetRef = useRef<TextInput>(null);
+  const cityRef = useRef<TextInput>(null);
 
   async function locate() {
     setLocating(true);
@@ -41,9 +44,9 @@ export default function NewAddress() {
     <Screen
       edges={['bottom']}
       footer={<Button title="Salvar endereço" onPress={save} loading={saving} disabled={!coordinate || !street.trim() || !city.trim()} />}>
-      <Field label="Nome" placeholder="Casa, Trabalho, Casa da vó…" value={label} onChangeText={setLabel} />
-      <Field label="Rua, número e complemento" value={street} onChangeText={setStreet} autoComplete="street-address" />
-      <Field label="Cidade" value={city} onChangeText={setCity} />
+      <Field label="Nome" placeholder="Casa, Trabalho, Casa da vó…" value={label} onChangeText={setLabel} next={streetRef} />
+      <Field ref={streetRef} next={cityRef} label="Rua, número e complemento" value={street} onChangeText={setStreet} autoComplete="street-address" />
+      <Field ref={cityRef} label="Cidade" value={city} onChangeText={setCity} />
       <Button
         title={coordinate ? 'Localização marcada' : 'Usar minha localização atual'}
         icon={coordinate ? 'checkmark-circle' : 'locate'}

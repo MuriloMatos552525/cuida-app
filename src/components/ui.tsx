@@ -1,7 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ReactNode } from 'react';
+import * as Haptics from 'expo-haptics';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
+import { ReactNode, Ref, useContext } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -24,6 +29,16 @@ export type IconName = keyof typeof Ionicons.glyphMap;
 
 // Componentes visuais do app. Poucos, grandes e com bastante respiro, no estilo do Uber.
 
+/** Toque em botões e opções fecha o teclado, para ele não ficar por cima do que vem depois. */
+function tap(onPress?: () => void, haptic = false) {
+  if (!onPress) return undefined;
+  return () => {
+    Keyboard.dismiss();
+    if (haptic && Platform.OS !== 'web') void Haptics.selectionAsync();
+    onPress();
+  };
+}
+
 export function Screen({
   children,
   scroll = true,
@@ -39,6 +54,8 @@ export function Screen({
   edges?: ('top' | 'bottom')[];
 }) {
   const insets = useSafeAreaInsets();
+  // Telas com cabeçalho começam abaixo dele; o teclado é medido a partir do topo da janela.
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
   const top = hero ? (
     <View style={[styles.hero, { paddingTop: insets.top + space.lg }]}>
       <View style={styles.heroInner}>{hero}</View>
@@ -46,18 +63,26 @@ export function Screen({
   ) : null;
   return (
     <SafeAreaView style={styles.screen} edges={hero ? edges.filter((e) => e !== 'top') : edges}>
-      {scroll ? (
-        <ScrollView keyboardShouldPersistTaps="handled">
-          {top}
-          <View style={styles.content}>{children}</View>
-        </ScrollView>
-      ) : (
-        <>
-          {top}
-          <View style={[styles.content, { flex: 1 }]}>{children}</View>
-        </>
-      )}
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {/* Sobe o conteúdo e o botão do rodapé quando o teclado abre. */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'web' ? undefined : 'padding'}
+        keyboardVerticalOffset={headerHeight}>
+        {scroll ? (
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}>
+            {top}
+            <View style={styles.content}>{children}</View>
+          </ScrollView>
+        ) : (
+          <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss} accessible={false}>
+            {top}
+            <View style={[styles.content, { flex: 1 }]}>{children}</View>
+          </Pressable>
+        )}
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -111,7 +136,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={tap(onPress)}
       disabled={inactive}
       style={({ pressed }) => [
         styles.button,
@@ -141,7 +166,7 @@ export function Card({
 }) {
   if (!onPress) return <View style={[styles.card, style]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, { opacity: pressed ? 0.85 : 1 }, style]}>
+    <Pressable onPress={tap(onPress)} style={({ pressed }) => [styles.card, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] }, style]}>
       {children}
     </Pressable>
   );
@@ -154,10 +179,10 @@ export function Row({ children, gap = space.sm, style }: { children: ReactNode; 
 export function Chip({ label, selected, onPress, icon }: { label: string; selected?: boolean; onPress?: () => void; icon?: IconName }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={tap(onPress, true)}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={[styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+      style={({ pressed }) => [styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }, pressed && { opacity: 0.7 }]}>
       {icon ? <Ionicons name={icon} size={16} color={selected ? colors.onPrimary : colors.text} /> : null}
       <RNText style={[styles.chipText, selected && { color: colors.onPrimary }]}>{label}</RNText>
     </Pressable>
@@ -200,17 +225,41 @@ export function Stepper({ value, onChange, min = 1, max = 10, label }: { value: 
 
 export function RoundIcon({ icon, onPress, disabled }: { icon: IconName; onPress: () => void; disabled?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[styles.roundIcon, disabled && { opacity: 0.3 }]} accessibilityRole="button">
+    <Pressable
+      onPress={tap(onPress, true)}
+      disabled={disabled}
+      style={({ pressed }) => [styles.roundIcon, disabled && { opacity: 0.3 }, pressed && { opacity: 0.6 }]}
+      accessibilityRole="button">
       <Ionicons name={icon} size={20} color={colors.primary} />
     </Pressable>
   );
 }
 
-export function Field({ label, ...props }: TextInputProps & { label: string }) {
+/**
+ * Campo de texto. Com `next`, a tecla do teclado vira "Próximo" e pula para esse campo; sem ela, a
+ * tecla fecha o teclado (campos de uma linha).
+ */
+export function Field({
+  label,
+  next,
+  ref,
+  style,
+  ...props
+}: TextInputProps & { label: string; next?: { current: TextInput | null }; ref?: Ref<TextInput> }) {
+  const multiline = !!props.multiline;
   return (
     <View style={{ gap: space.xs }}>
       <Text variant="label">{label}</Text>
-      <TextInput placeholderTextColor={colors.textSecondary} style={styles.input} {...props} />
+      <TextInput
+        ref={ref}
+        placeholderTextColor={colors.textSecondary}
+        returnKeyType={next ? 'next' : props.onSubmitEditing ? 'go' : 'done'}
+        submitBehavior={multiline ? 'newline' : next ? 'submit' : 'blurAndSubmit'}
+        onSubmitEditing={next ? () => next.current?.focus() : undefined}
+        accessibilityLabel={label}
+        style={[styles.input, style]}
+        {...props}
+      />
     </View>
   );
 }
@@ -267,7 +316,7 @@ export function StarPicker({ value, onChange }: { value: number; onChange: (v: n
   return (
     <Row gap={space.sm} style={{ justifyContent: 'center' }}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <Pressable key={n} onPress={() => onChange(n)} accessibilityLabel={`${n} estrelas`}>
+        <Pressable key={n} onPress={tap(() => onChange(n), true)} accessibilityLabel={`${n} estrelas`} hitSlop={6}>
           <Ionicons name={n <= value ? 'star' : 'star-outline'} size={36} color={n <= value ? colors.star : colors.border} />
         </Pressable>
       ))}

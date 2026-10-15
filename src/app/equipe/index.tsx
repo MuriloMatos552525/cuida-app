@@ -10,7 +10,7 @@ import { useFocusData } from '@/lib/useAsync';
 
 /** Fila da equipe: quem enviou documentos e cuidadores esperando liberação. */
 export default function StaffQueue() {
-  const { data, error } = useFocusData(() => api.staffQueue());
+  const { data, error } = useFocusData(() => api.staffQueue(), undefined, 'staffQueue');
 
   return (
     <Screen edges={[]}>

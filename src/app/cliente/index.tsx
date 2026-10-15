@@ -22,7 +22,7 @@ const safety: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
 
 export default function ClientHome() {
   const profile = useProfile();
-  const { data: bookings } = useFocusData(() => api.listBookings());
+  const { data: bookings } = useFocusData(() => api.listBookings(), undefined, 'bookings');
   const active = bookings?.find((b) => ACTIVE_STATUSES.includes(b.status));
 
   return (
