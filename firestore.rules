@@ -67,7 +67,9 @@ service cloud.firestore {
 
     match /bookings/{bookingId} {
       function booking() { return get(/databases/$(database)/documents/bookings/$(bookingId)).data; }
-      allow read: if signedIn() && request.auth.uid in [resource.data.clientId, resource.data.caregiverId];
+      // Comparações separadas (e não "uid in [...]") para a lista com or(cliente, cuidador) passar.
+      allow read: if signedIn()
+        && (resource.data.clientId == request.auth.uid || resource.data.caregiverId == request.auth.uid);
       allow write: if false;
 
       // PIN de início: só o cliente vê e passa para o cuidador pessoalmente.

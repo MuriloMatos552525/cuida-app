@@ -7,7 +7,7 @@ import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, doc, getDoc, getDocs, setDoc, setLogLevel, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, or, orderBy, query, setDoc, setLogLevel, updateDoc, where } from 'firebase/firestore';
 
 // Regras de segurança do Firestore contra o emulador (npm run test:emulator).
 
@@ -95,6 +95,12 @@ describe('cuidador', () => {
 describe('reserva', () => {
   test('só as partes leem, ninguém grava pelo app', async () => {
     await assertSucceeds(getDoc(doc(as('cli'), 'bookings/b1')));
+    // A lista de reservas do app (tela Reservas).
+    const mine = (uid: string) =>
+      getDocs(query(collection(as(uid), 'bookings'), or(where('clientId', '==', uid), where('caregiverId', '==', uid)), orderBy('start', 'desc'), limit(50)));
+    await assertSucceeds(mine('cli'));
+    await assertSucceeds(mine('cui'));
+    await assertFails(getDocs(collection(as('outro'), 'bookings')));
     await assertSucceeds(getDoc(doc(as('cui'), 'bookings/b1')));
     await assertFails(getDoc(doc(as('outro'), 'bookings/b1')));
     await assertFails(updateDoc(doc(as('cli'), 'bookings/b1'), { status: 'concluida' }));
