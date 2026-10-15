@@ -35,6 +35,11 @@ export const createBooking = callable('createBooking');
 export const bookingTransition = callable('bookingTransition');
 export const submitReview = callable('submitReview');
 export const triggerEmergency = callable('triggerEmergency');
+export const submitVerification = callable('submitVerification');
+export const staffQueue = callable('staffQueue');
+export const staffDetails = callable('staffDetails');
+export const staffReview = callable('staffReview');
+export const staffApproveCaregiver = callable('staffApproveCaregiver');
 
 // Mudou a verificação (feita pela equipe ou pelo provedor) ou o perfil do cuidador: recalcula a elegibilidade.
 export const onVerificationWritten = onDocumentWritten('verifications/{uid}', (event) =>

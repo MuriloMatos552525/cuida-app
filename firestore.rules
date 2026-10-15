@@ -32,19 +32,17 @@ service cloud.firestore {
       }
     }
 
-    // Verificações: o próprio usuário só consegue mandar um item para análise.
-    // Aprovação, reprovação e validade vêm da equipe ou do provedor de checagem.
+    // Verificações: o envio (com CPF e fotos) e a análise da equipe passam pelo servidor.
+    // CPF, fotos (verificationFiles), fila da equipe e índice de CPF não são lidos pelo app.
     match /verifications/{uid} {
-      function sentToReview(kind) {
-        return !(kind in request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys())
-          || (request.resource.data[kind].keys().hasOnly(['status', 'updatedAt'])
-              && request.resource.data[kind].status == 'em_analise'
-              && (resource == null || !(kind in resource.data) || resource.data[kind].status in ['pendente', 'reprovado', 'expirado']));
-      }
       allow read: if isMe(uid);
-      allow create, update: if isMe(uid)
-        && request.resource.data.keys().hasOnly(['cpf', 'documento', 'selfie', 'antecedentes'])
-        && sentToReview('cpf') && sentToReview('documento') && sentToReview('selfie') && sentToReview('antecedentes');
+      allow write: if false;
+    }
+
+    // Equipe: documento criado à mão no Console. O app só confere se a própria pessoa é da equipe.
+    match /staff/{uid} {
+      allow read: if isMe(uid);
+      allow write: if false;
     }
 
     // Perfil público do cuidador. Campos de confiança (verificado, elegível, nota, especialidades

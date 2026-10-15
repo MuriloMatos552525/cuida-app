@@ -12,7 +12,8 @@
       "bundleIdentifier": "br.com.cuidaapp.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para encontrar cuidadores perto de você e, durante o serviço, para o botão de emergência.",
-        "NSCameraUsageDescription": "A câmera é usada para a selfie de verificação de identidade e para enviar documentos."
+        "NSCameraUsageDescription": "A câmera é usada para a selfie de verificação de identidade e para enviar documentos.",
+        "NSPhotoLibraryUsageDescription": "Usamos suas fotos para enviar documentos de verificação de identidade."
       }
     },
     "android": {
@@ -43,6 +44,13 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Usamos sua localização para encontrar cuidadores perto de você e, durante o serviço, para o botão de emergência."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Usamos suas fotos para enviar documentos de verificação de identidade.",
+          "cameraPermission": "A câmera é usada para a selfie de verificação de identidade e para enviar documentos."
         }
       ]
     ],

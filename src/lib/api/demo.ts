@@ -9,6 +9,7 @@ import type {
 } from '@shared/models';
 import { ACTIVE_STATUSES } from '@shared/models';
 import { distanceKm, localParts, quote } from '@shared/pricing';
+import { isValidCpf } from '@shared/cpf';
 import { isIdentityVerified, nextStatus, TransitionError } from '@shared/rules';
 import { DEMO_CAREGIVERS, NATIONAL_HOLIDAYS, SAMPLE_PRICING_RULES, SPECIALTIES } from '@shared/seedData';
 
@@ -30,7 +31,7 @@ const roundCoordinate = (c: { latitude: number; longitude: number }) => ({
   longitude: Math.round(c.longitude * 100) / 100,
 });
 
-interface DemoUser extends Profile {
+interface DemoUser extends Omit<Profile, 'staff'> {
   password: string;
   addresses: Address[];
   ratingCount: number;
@@ -309,7 +310,8 @@ export class DemoApi implements Api {
 
   // Cuidador ---------------------------------------------------------------------------------
 
-  async sendVerification(kind: keyof Verifications) {
+  async sendVerification(kind: keyof Verifications, input: { cpf?: string; image?: string }) {
+    if (kind === 'cpf' && !isValidCpf(input.cpf ?? '')) throw new ApiError('CPF inválido. Confira os números.');
     const me = this.me();
     me.verifications = { ...me.verifications, [kind]: { status: 'em_analise', updatedAt: new Date().toISOString() } };
     this.emitProfile();
@@ -341,6 +343,24 @@ export class DemoApi implements Api {
     Object.assign(c, { exact: coordinate, coordinate: roundCoordinate(coordinate), city });
   }
 
+  // Equipe (só existe com o Firebase) ---------------------------------------------------------
+
+  async staffQueue(): Promise<never> {
+    throw new ApiError('A área da equipe não existe no modo demonstração.');
+  }
+
+  async staffDetails(): Promise<never> {
+    throw new ApiError('A área da equipe não existe no modo demonstração.');
+  }
+
+  async staffReview(): Promise<never> {
+    throw new ApiError('A área da equipe não existe no modo demonstração.');
+  }
+
+  async staffApproveCaregiver(): Promise<never> {
+    throw new ApiError('A área da equipe não existe no modo demonstração.');
+  }
+
   // Internos ---------------------------------------------------------------------------------
 
   private me(): DemoUser {
@@ -351,7 +371,7 @@ export class DemoApi implements Api {
   private publicProfile(): Profile | null {
     if (!this.current) return null;
     const { password: _p, addresses: _a, ratingCount: _r, ...profile } = this.current;
-    return { ...profile };
+    return { ...profile, staff: false };
   }
 
   private emitProfile() {

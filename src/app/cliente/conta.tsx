@@ -59,6 +59,10 @@ export default function ClientAccount() {
         </Card>
       </Section>
 
+      {profile.staff ? (
+        <Button title="Análise de documentos (equipe)" icon="shield-checkmark-outline" variant="secondary" onPress={() => router.push('/equipe')} />
+      ) : null}
+
       <Button title="Sair" variant="secondary" onPress={() => api.signOut()} />
     </Screen>
   );

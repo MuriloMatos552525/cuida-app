@@ -21,6 +21,8 @@ export interface VerificationItem {
   /** ISO date (AAAA-MM-DD) até quando vale; usado na certidão de antecedentes. */
   validUntil?: string | null;
   updatedAt?: string;
+  /** Motivo mostrado à pessoa quando a equipe reprova. */
+  reason?: string | null;
 }
 
 export type Verifications = Partial<Record<VerificationKind, VerificationItem>>;
@@ -175,4 +177,29 @@ export interface PriceBreakdown {
   total: Cents;
   platformFee: Cents;
   caregiverPayout: Cents;
+}
+
+/** Pessoa com itens esperando análise da equipe (coleção reviewQueue). */
+export interface ReviewQueueEntry {
+  uid: string;
+  fullName: string;
+  role: UserRole;
+  /** Itens enviados e ainda não analisados. */
+  kinds: VerificationKind[];
+  /** Cuidador com documentos aprovados esperando a liberação da equipe. */
+  awaitingApproval: boolean;
+  updatedAt: string;
+}
+
+/** O que a equipe vê ao analisar uma pessoa. */
+export interface ReviewDetails {
+  uid: string;
+  fullName: string;
+  role: UserRole;
+  cpf: string | null;
+  verifications: Verifications;
+  /** Imagens JPEG em base64, por item enviado. */
+  files: Partial<Record<Exclude<VerificationKind, 'cpf'>, string>>;
+  /** Só para cuidadores. */
+  approvedByStaff: boolean | null;
 }

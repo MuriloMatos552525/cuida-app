@@ -33,7 +33,7 @@ export class AppError extends Error {
 /** Raio máximo de busca, em km (o raio de cada cuidador é aplicado depois). */
 const MAX_SEARCH_RADIUS_KM = 30;
 
-const nowIso = () => new Date().toISOString();
+export const nowIso = () => new Date().toISOString();
 const today = () => localParts(new Date()).day;
 
 /** Coordenada arredondada (~1 km) para não expor o endereço de ninguém. */
@@ -51,7 +51,7 @@ function assertCoordinate(c: unknown): asserts c is Coordinate {
   }
 }
 
-async function getRole(db: Firestore, uid: string): Promise<{ role: string; fullName: string; suspended: boolean }> {
+export async function getRole(db: Firestore, uid: string): Promise<{ role: string; fullName: string; suspended: boolean }> {
   const snap = await db.doc(`users/${uid}`).get();
   if (!snap.exists) throw new AppError('failed-precondition', 'Complete seu cadastro primeiro.');
   const data = snap.data()!;

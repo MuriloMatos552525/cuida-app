@@ -98,8 +98,20 @@ GCLOUD_PROJECT=cuida-cdd3d npm run seed -- --reference
 ```
 
 O app (`npx expo start`) roda sempre na **pasta raiz** do projeto, nunca dentro de `functions`.
-Um cuidador real só aparece na busca depois que a equipe marca `approvedByStaff` no documento dele
-em `caregivers`, no Console do Firestore.
+Um cuidador real só aparece na busca depois que a equipe aprova os documentos e libera o cuidador
+na **Análise de documentos** (veja abaixo).
+
+### Equipe que analisa documentos
+
+CPF, documento, selfie e certidão de antecedentes são enviados pelo app (tela **Conta**, ou
+**Perfil** do cuidador). As fotos ficam no Firestore em coleções que o app não consegue ler. Para
+entrar na equipe:
+
+1. Crie sua conta no app e copie o seu **User UID** em **Authentication > Users**, no Console do Firebase.
+2. Em **Firestore Database**, crie a coleção `staff` com um documento cujo ID é esse UID (sem campos).
+3. Feche e abra o app. Na tela **Conta** aparece o botão **Análise de documentos (equipe)**, com a fila
+   de quem enviou documentos. Aprove ou reprove cada item (a pessoa vê o motivo) e, para cuidadores,
+   toque em **Liberar cuidador** depois de conferir tudo.
 
 Para desenvolver sem tocar no projeto real: `cd functions && npm run serve` sobe os emuladores,
 `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run seed` popula com dados de exemplo, e
@@ -111,6 +123,7 @@ Para desenvolver sem tocar no projeto real: `cd functions && npm run serve` sobe
   pelas Cloud Functions. As regras do Firestore (`firestore.rules`) bloqueiam o resto e têm testes.
 - **Cuidador só aparece na busca** com CPF, documento, selfie e antecedentes aprovados, certidão
   dentro da validade, aprovação da equipe e sem suspensão. Uma rotina diária vence certidões antigas.
+- **Um CPF por conta:** quem for reprovado ou suspenso não volta com outra conta usando o mesmo CPF.
 - **Endereço exato** do cliente só é liberado ao cuidador depois que ele aceita, e some quando o
   serviço termina. A localização do cuidador aparece arredondada (~1 km).
 - **PIN de início:** o serviço só começa com o código de 4 dígitos que aparece no app do cliente.
@@ -150,7 +163,8 @@ cd functions && npm test && npm run test:emulator          # backend (precisa de
 
 ## Falta para lançar
 
-- Envio de documentos e selfie para um provedor de verificação (idwall, unico, CAF) e aprovação pela equipe.
+- Conferência automática de CPF na Receita, comparação da selfie com o documento e busca de
+  antecedentes por um provedor (idwall, unico, CAF). Hoje a equipe confere tudo a olho.
 - Pagamento com divisão automática (Pagar.me, Mercado Pago ou Asaas) a partir da coleção `payments`.
 - SMS aos contatos de emergência e notificações push.
 - Login por telefone (exige build de desenvolvimento com `@react-native-firebase`).

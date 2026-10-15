@@ -26,7 +26,18 @@ import {
 } from 'firebase/firestore';
 import { connectFunctionsEmulator, FunctionsError, getFunctions, httpsCallable, httpsCallableFromURL } from 'firebase/functions';
 
-import type { Address, Booking, CaregiverResult, CaregiverSummary, Review, UserRole, Verifications } from '@shared/models';
+import type {
+  Address,
+  Booking,
+  CaregiverResult,
+  CaregiverSummary,
+  Review,
+  ReviewDetails,
+  ReviewQueueEntry,
+  UserRole,
+  VerificationKind,
+  Verifications,
+} from '@shared/models';
 
 import { createAuth } from './auth';
 import { Api, ApiError, CaregiverProfile, NewBooking, Profile, SearchParams } from './types';
@@ -122,9 +133,10 @@ export class FirebaseApi implements Api {
     if (!user) {
       this.profile = null;
     } else {
-      const [profile, verifications] = await Promise.all([
+      const [profile, verifications, staff] = await Promise.all([
         getDoc(doc(this.db, 'users', user.uid)),
         getDoc(doc(this.db, 'verifications', user.uid)),
+        getDoc(doc(this.db, 'staff', user.uid)),
       ]);
       // Logo após criar a conta o perfil ainda pode não existir; signUp chama de novo.
       if (!profile.exists()) return;
@@ -136,6 +148,7 @@ export class FirebaseApi implements Api {
         role: data.role,
         ratingAvg: data.ratingAvg ?? null,
         verifications: (verifications.data() ?? {}) as Verifications,
+        staff: staff.exists(),
       };
     }
     for (const l of this.listeners) l(this.profile);
@@ -239,18 +252,12 @@ export class FirebaseApi implements Api {
 
   // Cuidador ---------------------------------------------------------------------------------
 
-  async sendVerification(kind: keyof Verifications) {
-    // Os arquivos (documento, selfie, certidão) vão para o provedor de verificação; aqui só
-    // registramos o pedido de análise. A aprovação vem da equipe pelo console.
-    await friendly(
-      setDoc(
-        doc(this.db, 'verifications', this.uid()),
-        { [kind]: { status: 'em_analise', updatedAt: new Date().toISOString() } },
-        { merge: true },
-      ),
-    );
+  async sendVerification(kind: keyof Verifications, input: { cpf?: string; image?: string }) {
+    // CPF e fotos vão para o servidor, que guarda em coleções que o app não lê.
+    await this.call('submitVerification', { kind, ...input });
     await this.reloadProfile();
   }
+
 
   async myCaregiverProfile() {
     const snap = await getDoc(doc(this.db, 'caregivers', this.uid()));
@@ -271,6 +278,24 @@ export class FirebaseApi implements Api {
 
   async setCaregiverLocation(coordinate: { latitude: number; longitude: number }, city: string) {
     await this.call('setCaregiverLocation', { coordinate, city });
+  }
+
+  // Equipe -----------------------------------------------------------------------------------
+
+  staffQueue() {
+    return this.call<ReviewQueueEntry[]>('staffQueue', {});
+  }
+
+  staffDetails(uid: string) {
+    return this.call<ReviewDetails>('staffDetails', { uid });
+  }
+
+  async staffReview(input: { uid: string; kind: VerificationKind; approve: boolean; reason?: string; validUntil?: string }) {
+    await this.call('staffReview', input);
+  }
+
+  async staffApproveCaregiver(uid: string, approved: boolean) {
+    await this.call('staffApproveCaregiver', { uid, approved });
   }
 
   // Internos ---------------------------------------------------------------------------------

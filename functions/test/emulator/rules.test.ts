@@ -7,7 +7,7 @@ import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, setLogLevel, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, setLogLevel, updateDoc } from 'firebase/firestore';
 
 // Regras de segurança do Firestore contra o emulador (npm run test:emulator).
 
@@ -54,22 +54,25 @@ describe('perfil', () => {
 });
 
 describe('verificações', () => {
-  test('envia para análise, mas não aprova', async () => {
+  test('o app lê a própria, mas não grava nem lê fotos e CPF', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'verifications/cui'), { cpf: { status: 'aprovado' } });
+      await setDoc(doc(ctx.firestore(), 'verificationFiles/cui__selfie'), { image: '/9j/' });
+      await setDoc(doc(ctx.firestore(), 'verificationData/cui'), { cpf: '52998224725' });
+    });
     const db = as('cui');
-    await assertSucceeds(setDoc(doc(db, 'verifications/cui'), { cpf: { status: 'em_analise' } }));
-    await assertFails(setDoc(doc(db, 'verifications/cui'), { cpf: { status: 'aprovado' } }));
-    await assertFails(
-      setDoc(doc(db, 'verifications/cui'), { cpf: { status: 'em_analise' }, antecedentes: { status: 'em_analise', validUntil: '2099-01-01' } }),
-    );
-    await assertFails(setDoc(doc(as('cli'), 'verifications/cui'), { cpf: { status: 'em_analise' } }));
+    await assertSucceeds(getDoc(doc(db, 'verifications/cui')));
+    await assertFails(getDoc(doc(as('cli'), 'verifications/cui')));
+    await assertFails(setDoc(doc(db, 'verifications/cui'), { selfie: { status: 'em_analise' } }));
+    await assertFails(getDoc(doc(db, 'verificationFiles/cui__selfie')));
+    await assertFails(getDoc(doc(db, 'verificationData/cui')));
+    await assertFails(getDocs(collection(db, 'reviewQueue')));
   });
 
-  test('não reenvia o que já está aprovado', async () => {
-    await env.withSecurityRulesDisabled((ctx) =>
-      setDoc(doc(ctx.firestore(), 'verifications/cui'), { cpf: { status: 'aprovado' } }),
-    );
-    await assertFails(updateDoc(doc(as('cui'), 'verifications/cui'), { cpf: { status: 'em_analise' } }));
-    await assertSucceeds(updateDoc(doc(as('cui'), 'verifications/cui'), { selfie: { status: 'em_analise' } }));
+  test('só a própria pessoa vê se é da equipe, e ninguém se coloca nela', async () => {
+    await assertSucceeds(getDoc(doc(as('cui'), 'staff/cui')));
+    await assertFails(getDoc(doc(as('cli'), 'staff/cui')));
+    await assertFails(setDoc(doc(as('cui'), 'staff/cui'), {}));
   });
 });
 
