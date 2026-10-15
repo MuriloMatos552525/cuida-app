@@ -11,7 +11,7 @@ import { useFocusData } from '@/lib/useAsync';
 
 export default function ClientAccount() {
   const profile = useProfile();
-  const { data: addresses } = useFocusData(() => api.listAddresses());
+  const { data: addresses } = useFocusData(() => api.listAddresses(), undefined, 'addresses');
 
   return (
     <Screen

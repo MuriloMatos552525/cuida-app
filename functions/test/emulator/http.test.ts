@@ -44,6 +44,10 @@ test('responde no formato das funções callable', async () => {
   expect(result.map((r) => r.caregiver.id)).toEqual(['demo-ana', 'demo-julia']);
 });
 
+test('ping responde sem login', async () => {
+  expect(await handle({ method: 'GET', name: 'ping', body: null }, deps)).toEqual({ status: 200, body: { result: 'ok' } });
+});
+
 test('exige login válido', async () => {
   for (const authorization of ['', 'Bearer outro']) {
     const out = await post('searchCaregivers', search, authorization);
